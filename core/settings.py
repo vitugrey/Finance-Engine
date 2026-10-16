@@ -75,8 +75,18 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+import os
 
-DB_DIR = BASE_DIR.parent / 'databases'
+_env_db = os.getenv("KALLIA_DB_DIR") or os.getenv("DATABASES_DIR")
+if _env_db and Path(_env_db).exists():
+    DB_DIR = Path(_env_db)
+elif Path("/databases").exists() and not Path("/databases").drive:
+    DB_DIR = Path("/databases")
+elif (BASE_DIR.parent / 'databases').exists():
+    DB_DIR = BASE_DIR.parent / 'databases'
+else:
+    DB_DIR = BASE_DIR / 'databases'
+
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
 DATABASES = {
