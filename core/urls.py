@@ -1,22 +1,7 @@
-"""
-URL configuration for core project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
 from . import views
+from . import api
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,5 +9,12 @@ urlpatterns = [
     path('metas/', views.goals, name='goals'),
     path('investimentos/', include('investments.urls')),
     path('carteira/', include('budget.urls')),
-]
 
+    # ============ Endpoints da API REST ============ #
+    path('api/', api.api_status, name='api_status'),
+    path('api/resumo/', api.api_summary, name='api_summary'),
+    path('api/investimentos/', api.api_investments, name='api_investments'),
+    path('api/proventos/', api.api_dividends, name='api_dividends'),
+    path('api/orcamento/', api.api_budget, name='api_budget'),
+    path('api/metas/', api.api_goals, name='api_goals'),
+]

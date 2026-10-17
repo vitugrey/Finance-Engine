@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    container_name: kallia-financa
+    container_name: kallia-finance
     restart: always
     ports:
       - "7777:7777"

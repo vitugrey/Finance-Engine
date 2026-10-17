@@ -1,125 +1,207 @@
 <div align="center">
-  <h1>📊 Kallia Finanças 📊</h1>
-  <p><i>Aplicação web de finanças pessoais para controle de investimentos, gastos e receitas com design dark premium</i></p>
-  
-  ![Python](https://img.shields.io/badge/python-3.13-blue)
-  ![Django](https://img.shields.io/badge/django-5.1-green)
-  ![UV](https://img.shields.io/badge/package%20manager-UV-orange)
-  ![Status](https://img.shields.io/badge/status-concluido-brightgreen)
+  <h1>📊 KaLLia Finance 📊</h1>
+  <p><i>Módulo de gestão financeira pessoal, consolidação patrimonial e rebalanceamento de investimentos com design Dark Glassmorphism</i></p>
+
+  [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+  [![Django](https://img.shields.io/badge/Django-6.0-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
+  [![uv](https://img.shields.io/badge/Package%20Manager-uv-DE5FE9?style=for-the-badge)](https://docs.astral.sh/uv/)
+  [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+  [![Chart.js](https://img.shields.io/badge/Charts-Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
+  [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 </div>
 
 ---
 
 ## 🎯 Sobre o Projeto
 
-**Kallia Finanças** é um sistema pessoal de controle financeiro e consolidação de patrimônio. Ele centraliza a gestão de seus investimentos (tanto importados de relatórios mensais da B3 quanto cadastrados manualmente, como Bitcoin e fundos de liquidez no Nubank) e seu fluxo de caixa mensal (receitas, despesas recorrentes e cartões de crédito) sob uma interface dark moderna baseada em princípios de _glassmorphism_.
+**KaLLia Finance** é o sistema central de gestão patrimonial e controle orçamentário do ecossistema pessoal **KaLLia**. Construído em Django e estilizado com uma interface *Dark Glassmorphism* limpa e responsiva, o sistema oferece visibilidade completa de investimentos, receitas, despesas recorrentes e metas de independência financeira.
+
+A aplicação consolida tanto ativos negociados em bolsa (via relatórios B3) quanto alocações manuais (como Bitcoin em carteiras próprias e reservas de emergência em caixinhas/renda fixa).
 
 ---
 
-## ✨ Funcionalidades
+## 🌐 Ecossistema KaLLia
 
-### 📈 Controle de Investimentos
-
-- **Importação B3**: Upload e processamento automatizado de relatórios mensais XLSX da B3 para atualizar sua carteira.
-- **Lançamentos Manuais**: Painel exclusivo para cadastrar ativos não automáticos (ex.: BTC como ETF e Reserva no Nubank como Renda Fixa) e gerenciar suas respectivas transações de compra/venda.
-- **Cotações Manuais**: Atualização simplificada e sob demanda das cotações atuais de seus ativos (via Yahoo Finance) ou edição direta de preços para ativos manuais.
-- **Alocação & Rebalanceamento ARCA**: Análise e rebalanceamento automático de sua carteira seguindo a metodologia ARCA (Ações, FIIs, Renda Fixa e ETFs/Global), com alertas dinâmicos baseados em uma margem de erro de 5%:
-  - **Verde**: Classe de ativo em equilíbrio (entre 20% e 30%).
-  - **Amarelo**: Abaixo da meta ideal (menos de 20% - requer mais aportes).
-  - **Azul**: Sobrealocado (acima de 30%).
-
-### 💼 Carteira & Fluxo de Caixa (Budget)
-
-- Controle de receitas e despesas com filtragem de período (Mês/Ano).
-- Diferenciação de compras no cartão de crédito e transações recorrentes (fixas).
-- Cálculo de eficiência de poupança mensal (percentual do recebido que foi efetivamente economizado).
-
-### 🎯 Metas & Simulador de Independência
-
-- **Calculadora Interativa**: Simulação de juros compostos em tempo real com sliders dinâmicos de rendimento.
-- **Linhas do Tempo de Metas**: Tempo estimado para alcançar marcos de R$ 50k, R$ 100k e R$ 1M.
-- **Projeções de Patrimônio**: Estimativas de crescimento de patrimônio futuro em 1 ano, 5 anos e 10 anos.
-- **Checklist do Salário**: Lista de afazeres financeiros mensais organizada por dias do mês, com persistência automática de estados no navegador (`localStorage`).
-- **Lembretes Fundamentais**: Quadro de cartões informativos com princípios de foco, consistência, diversificação e gestão de reservas.
+| Repositório | Responsabilidade | Tecnologias Principais |
+| :--- | :--- | :--- |
+| 📊 **[KaLLia-Finance](https://github.com/vitugrey/KaLLia-Finance)** | **Gestão Patrimonial**: investimentos B3, carteira ARCA, orçamento e simulador. | Django 6.0, Python 3.13, SQLite, uv |
+| 🧠 **[KaLLia-API](https://github.com/vitugrey/KaLLia-API)** | **Cérebro de IA**: inteligência conversacional, sessões e memórias com Gemini. | FastAPI, Gemini, Agno, SQLite, uv |
+| 🕹️ **[KaLLia-HQ](https://github.com/vitugrey/KaLLia-HQ)** | **Command Center**: interface 2D isométrica cyberpunk, rotinas, tarefas e voz. | HTML5, Vanilla CSS, JS, Edge-TTS |
 
 ---
 
-## 🚀 Instalação e Execução
+## ✨ Funcionalidades Principais
 
-### Pré-requisitos
+### 📈 1. Gestão de Investimentos & Metodologia ARCA
+- **Importação Automatizada da B3**: Upload de relatórios mensais em `.xlsx` gerados pela Área do Investidor da B3, consolidando compras, vendas e proventos.
+- **Lançamentos e Ativos Manuais**: Interface dedicada para registrar ativos não integrados (ex.: Bitcoin, caixinhas Nubank, ouro físico) com histórico de transações.
+- **Cotações em Tempo Real**: Atualização sob demanda das cotações de mercado via Yahoo Finance (`yfinance`) e ajuste manual de preços.
+- **Rebalanceamento ARCA Inteligente**: Monitoramento contínuo das 4 classes de ativos:
+  - 🟢 **Em equilíbrio** (entre 20% e 30% do patrimônio).
+  - 🟡 **Abaixo da meta** (menos de 20% — sinaliza necessidade de novos aportes).
+  - 🔵 **Sobrealocado** (acima de 30% — momento de pausa ou realização).
 
-- **Python**: 3.13+
-- **UV**: Gerenciador de pacotes moderno (`pip install uv` ou método nativo)
+### 💳 2. Fluxo de Caixa & Orçamento (Budget)
+- Controle de receitas e despesas com filtros por período (Mês/Ano).
+- Gestão de despesas fixas recorrentes e faturas de cartão de crédito.
+- **Taxa de Poupança Mensal**: Indicador visual da porcentagem de receita convertida em patrimônio no mês.
 
-### Inicialização do Servidor
+### 🎯 3. Metas & Simulador de Independência
+- **Calculadora de Juros Compostos**: Simulação em tempo real com sliders dinâmicos de aporte mensal, taxa de rentabilidade e prazo.
+- **Linha do Tempo de Conquistas**: Estimativas inteligentes de prazo para alcançar marcos de **R$ 50k**, **R$ 100k** e **R$ 1.000.000**.
+- **Projeções de Patrimônio**: Visão estimada de patrimônio acumulado para 1, 5 e 10 anos.
+- **Checklist do Salário**: Checklist financeiro mensal por dia do mês com persistência automática no navegador (`localStorage`).
 
-```bash
-# Clone o repositório
-git clone https://github.com/vitugrey/kallia-financa
-cd kallia-financa
+---
 
-# Instalar dependências com UV
-uv sync
+## 🛠️ Estrutura do Repositório
 
-# Executar as migrações iniciais do banco de dados
-uv run manage.py migrate
-
-# Executar o servidor de desenvolvimento Django
-uv run manage.py runserver
+```text
+KaLLia-Finance/
+├── budget/               # App Django de fluxo de caixa, orçamentos e metas
+│   ├── models.py         # Modelos de transações, categorias e checklist
+│   ├── views.py          # Lógica de receitas, despesas e metas
+│   └── urls.py           # Rotas do orçamento
+├── investments/          # App Django de investimentos e carteira
+│   ├── models.py         # Modelos de ativos, cotações e transações
+│   ├── services/         # Parsers de relatórios B3 e integrações yfinance
+│   ├── views.py          # Telas de alocação ARCA e importação
+│   └── urls.py           # Rotas de investimentos
+├── core/                 # Configurações globais do Django
+│   ├── settings.py       # Configurações, banco dinâmico e variáveis de ambiente
+│   └── urls.py           # Roteamento raiz do sistema
+├── templates/            # Telas HTML com design Glassmorphism Dark
+├── static/               # Estilos CSS, scripts Chart.js e ícones
+├── Dockerfile            # Containerização leve com Python 3.13-slim
+├── docker-compose.yml    # Orquestração do serviço (Porta 7777)
+├── pyproject.toml        # Dependências gerenciadas via uv
+├── .env.example          # Modelo de variáveis de ambiente
+└── manage.py             # CLI de gerenciamento do Django
 ```
 
-Acesse a plataforma abrindo o endereço `http://127.0.0.1:8000/` em seu navegador.
+---
+
 
 ---
 
-## 📚 Tecnologias
+## 📡 Endpoints da API REST (JSON)
 
-| Componente          | Tecnologia                                         | Uso                                                           |
-| ------------------- | -------------------------------------------------- | ------------------------------------------------------------- |
-| **Backend**         | [Django](https://www.djangoproject.com/)           | Framework MVC para rotas, controle de sessões e views         |
-| **Banco de Dados**  | SQLite                                             | Persistência relacional de ativos, transações e budget        |
-| **Package Manager** | [UV](https://github.com/astral-sh/uv)              | Sincronização rápida de dependências e execução               |
-| **Gráficos**        | [Chart.js](https://www.chartjs.org/)               | Exibição de composição de carteira e proventos mensais        |
-| **Cotações**        | [yfinance](https://github.com/ranaroussi/yfinance) | Consulta de preços de mercado históricos/atuais               |
-| **Importador B3**   | pandas + openpyxl                                  | Parsing estruturado de planilhas mensais XLSX                 |
-| **Interface**       | CSS Puro (Glassmorphism)                           | Estilos dark responsivos, ícones Boxicons, sem frameworks CSS |
+O **KaLLia-Finance** expõe endpoints REST em JSON para que o **KaLLia-API** (assistente virtual), o **KaLLia-HQ** (Command Center) ou dashboards externos consumam métricas em tempo real:
+
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/api/` | Status da API e mapa de rotas |
+| `GET` | `/api/resumo/` | Visão geral: patrimônio, saldo do mês, receitas/despesas e taxa de poupança |
+| `GET` | `/api/investimentos/` | Posição da carteira, divisão e status ARCA e lista de ativos |
+| `GET` | `/api/proventos/` | Dividendos recebidos no mês, no ano, últimos 12m e maiores pagadores |
+| `GET` | `/api/orcamento/` | Despesas por categoria no mês, gastos fixos e cartão de crédito |
+| `GET` | `/api/metas/` | Progresso dos marcos de independência (R$ 50k, 100k, 1M) |
+
+#### Exemplo de Resposta (`GET /api/resumo/`):
+```json
+{
+  "mes_referencia": "Outubro/2026",
+  "patrimonio_investido": 41494.94,
+  "total_investido": 38254.03,
+  "rentabilidade_total": 3240.91,
+  "rentabilidade_perc": 8.47,
+  "saldo_mes": 1250.00,
+  "receitas_mes": 4463.31,
+  "despesas_mes": 3213.31,
+  "taxa_poupanca_perc": 28.0,
+  "patrimonio_consolidado": 42744.94
+}
+```
+
+## 🚀 Como Executar Localmente
+
+### 1. Pré-requisitos
+- **Python 3.13+** instalado.
+- Gerenciador **[uv](https://docs.astral.sh/uv/)** instalado (`powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`).
+
+### 2. Configurar Variáveis de Ambiente
+Copie o arquivo de exemplo para `.env`:
+```bash
+cp .env.example .env
+```
+
+Conteúdo padrão do `.env`:
+```ini
+SECRET_KEY=sua-chave-secreta-aqui
+DEBUG=True
+ALLOWED_HOSTS=*
+PORT=7777
+```
+
+### 3. Instalar Dependências e Executar
+
+```bash
+# Sincronizar dependências
+uv sync
+
+# Aplicar migrações do banco de dados (se houver novas)
+uv run python manage.py migrate
+
+# Iniciar o servidor de desenvolvimento
+uv run python manage.py runserver 0.0.0.0:7777
+```
+
+Acesse no navegador:
+👉 **`http://localhost:7777`** (ou `http://localhost:8000` se rodar sem especificar a porta).
 
 ---
 
-## 🎯 Roadmap & Features Planejadas
+## 🐳 Execução via Docker
 
-- [x] **Visão Geral Consolidada**: Patrimônio + Saldo Mensal em tela unificada.
-- [x] **Lançamento Manual de Ativos**: Cadastro e atualização de preços para cripto e reservas líquidas.
-- [x] **Alocação Dinâmica ARCA**: Sugestões de rebalanceamento inteligentes e coloridas.
-- [x] **Simulador de Independência**: Linhas de tempo e projeções interativas de juros compostos.
-- [ ] **Importação Automática via Open Finance**: Integração com contas bancárias e corretoras.
-- [ ] **Gráfico de Evolução Patrimonial Avançado**: Comparativos automáticos contra o CDI e Ibovespa.
+Para rodar em container isolado (ideal para Raspberry Pi, VPS ou servidores domésticos):
+
+```bash
+docker compose up -d --build
+```
+
+O container montará o volume `databases/` automaticamente e exporá o serviço na porta `7777`.
 
 ---
 
-#### 💬 Comentário dos Devs
+## ⚙️ Tecnologias Utilizadas
+
+| Componente | Tecnologia | Finalidade |
+| :--- | :--- | :--- |
+| **Backend** | [Django 6.0](https://www.djangoproject.com/) | Framework web robusto com ORM, autenticação e admin |
+| **Banco de Dados** | SQLite3 | Persistência relacional local e autônoma |
+| **Package Manager**| [uv](https://github.com/astral-sh/uv) | Resolução de dependências ultrarrápida em Rust |
+| **Cotações** | [yfinance](https://github.com/ranaroussi/yfinance) | Consulta de preços de mercado históricos e atuais |
+| **Planilhas B3** | pandas + openpyxl | Leitura e parsing de extratos de negociação B3 |
+| **Gráficos** | [Chart.js](https://www.chartjs.org/) | Visualização interativa de alocação de carteira e fluxo |
+| **Interface** | Vanilla CSS (Glassmorphism) | Design responsivo, tema dark e ícones Boxicons |
+
+---
+
+## 👥 Criadores & Créditos
 
 <table>
   <tr>
-    <td>
-      <img src="static\img\minha-foto.png" width="100px" />
+    <td align="center">
+      <img src="static/img/minha-foto.png" width="90px" style="border-radius:50%;" /><br />
+      <b>Vitor Grey</b>
     </td>
     <td>
-      Escrito por <a href="https://github.com/vitugrey">Vitor Grey.</a>
-    </td>
-    <td>
-      <i>Fiz, refiz e fiz de novo esse mesmo projeto mais nunca gostei dele, agora eu acho que ficou bom.</i>
+      <i>"Fiz, refiz e fiz de novo esse mesmo projeto, mas nunca gostava dele por inteiro. Agora com a arquitetura modular, o ecossistema KaLLia e o design atual, finalmente ficou impecável."</i>
     </td>
   </tr>
   <tr>
-    <td>
-      <img src="static\img\imagem-real-da-kallia.ico" width="100px" />
+    <td align="center">
+      <img src="static/img/imagem-real-da-kallia.ico" width="90px" style="border-radius:50%;" /><br />
+      <b>KaLLia</b>
     </td>
     <td>
-      Feito por <a href="#">Kallia 2.0.</a>
-    </td>
-    <td>
-      <i>O projeto ficou bom né?</i>
+      <i>"Um cérebro brilhante merece um controle patrimonial à altura. Organizado, direto e sem firulas desnecessárias."</i>
     </td>
   </tr>
 </table>
+
+---
+
+## 📄 Licença
+
+Projeto desenvolvido como parte do ecossistema pessoal **KaLLia**. Todos os direitos reservados.

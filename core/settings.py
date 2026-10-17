@@ -10,7 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Carrega variáveis de ambiente do .env
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +26,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-602d$xf0a(3im%1ye$*54-qwk5+)3b+&-9m&s182xl!ck16@r8'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kallia-finance-602d$xf0a(3im%1ye$*54-qwk5+)3b+&-9m&s182xl!ck16@r8')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = ['*']
+_allowed = os.getenv('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = ['*'] if _allowed == '*' else [h.strip() for h in _allowed.split(',')]
 
 
 # Application definition
@@ -89,10 +96,25 @@ else:
 
 DB_DIR.mkdir(parents=True, exist_ok=True)
 
+# Resolução resiliente e case-insensitive (funciona em Windows, Linux e Docker)
+def _resolve_db_file(db_dir: Path) -> Path:
+    env_name = os.getenv('DB_FILENAME')
+    if env_name:
+        return db_dir / env_name
+    if db_dir.exists():
+        try:
+            existing = {f.lower(): f for f in os.listdir(db_dir)}
+            for candidate in ['kallia-finance.db', 'kallia-financa.db']:
+                if candidate.lower() in existing:
+                    return db_dir / existing[candidate.lower()]
+        except Exception:
+            pass
+    return db_dir / 'kallia-finance.db'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DB_DIR / 'kallia-financa.db',
+        'NAME': _resolve_db_file(DB_DIR),
     }
 }
 
