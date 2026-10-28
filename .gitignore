@@ -5,10 +5,17 @@ build/
 dist/
 wheels/
 *.egg-info
+
+# Databases
 *.db
 *.sqlite3
+databases/
+
 # Virtual environments
 .venv
 
 # Environment variables
 .env
+
+# Internal brand documentation
+identidade visual.md

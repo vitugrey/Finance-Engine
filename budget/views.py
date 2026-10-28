@@ -49,38 +49,72 @@ def dashboard(request):
     # 3. Filtrar transações no período selecionado
     period_transactions = Transaction.objects.filter(date__range=(start_date, end_date))
     
-    # 4. Cálculo dos novos KPIs baseados no período
-    # KPIs de Receita
-    income_val = period_transactions.filter(transaction_type=Transaction.TransactionType.INCOME).aggregate(total=Sum('value'))['total'] or Decimal('0')
-    # Receita Extra (tudo o que não for categoria 'Salário')
-    extra_income_val = period_transactions.filter(
-        transaction_type=Transaction.TransactionType.INCOME
-    ).exclude(category__name__iexact='Salário').aggregate(total=Sum('value'))['total'] or Decimal('0')
+    # 4. Cálculo dos KPIs Executivos baseados no período
+    income_qs = period_transactions.filter(transaction_type=Transaction.TransactionType.INCOME)
+    expense_qs = period_transactions.filter(transaction_type=Transaction.TransactionType.EXPENSE)
 
-    # KPIs de Despesa
-    expense_val = period_transactions.filter(transaction_type=Transaction.TransactionType.EXPENSE).aggregate(total=Sum('value'))['total'] or Decimal('0')
-    # Despesas no Cartão de Crédito
-    credit_expense_val = period_transactions.filter(
-        transaction_type=Transaction.TransactionType.EXPENSE,
-        is_credit=True
+    income_val = income_qs.aggregate(total=Sum('value'))['total'] or Decimal('0')
+    income_count = income_qs.count()
+
+    fixed_income_val = income_qs.filter(
+        Q(is_fixed_income=True) | Q(category__name__iexact='Salário')
     ).aggregate(total=Sum('value'))['total'] or Decimal('0')
+    extra_income_val = max(Decimal('0'), income_val - fixed_income_val)
+    fixed_income_pct = (
+        ((fixed_income_val / income_val) * Decimal('100')).quantize(Decimal('0.1'))
+        if income_val > 0 else Decimal('0.0')
+    )
 
-    # KPIs de Balanço (Diferença)
+    expense_val = expense_qs.aggregate(total=Sum('value'))['total'] or Decimal('0')
+    expense_count = expense_qs.count()
+
+    fixed_expense_val = expense_qs.filter(is_fixed_expense=True).aggregate(total=Sum('value'))['total'] or Decimal('0')
+    fixed_expense_pct = (
+        ((fixed_expense_val / expense_val) * Decimal('100')).quantize(Decimal('0.1'))
+        if expense_val > 0 else Decimal('0.0')
+    )
+
+    credit_expense_val = expense_qs.filter(is_credit=True).aggregate(total=Sum('value'))['total'] or Decimal('0')
+    debit_pix_expense_val = max(Decimal('0'), expense_val - credit_expense_val)
+    credit_share_pct = (
+        ((credit_expense_val / expense_val) * Decimal('100')).quantize(Decimal('0.1'))
+        if expense_val > 0 else Decimal('0.0')
+    )
+
     balance_val = income_val - expense_val
-    # Diferença sem contar despesas no crédito
-    non_credit_expense_val = period_transactions.filter(
-        transaction_type=Transaction.TransactionType.EXPENSE,
-        is_credit=False
-    ).aggregate(total=Sum('value'))['total'] or Decimal('0')
-    balance_no_credit_val = income_val - non_credit_expense_val
+    balance_no_credit_val = income_val - debit_pix_expense_val
 
-    # 5. Gráfico de Rosca: Despesas por Categoria (Período Selecionado)
-    category_expenses = period_transactions.filter(
-        transaction_type=Transaction.TransactionType.EXPENSE
-    ).values('category__name').annotate(total=Sum('value')).order_by('-total')
+    savings_rate_pct = Decimal('0.0')
+    if income_val > 0 and balance_val > 0:
+        savings_rate_pct = min(Decimal('100.0'), ((balance_val / income_val) * Decimal('100'))).quantize(Decimal('0.1'))
 
-    category_labels = [c['category__name'] for c in category_expenses]
-    category_values = [float(c['total'] or 0) for c in category_expenses]
+    expense_commitment_pct = Decimal('0.0')
+    if income_val > 0:
+        expense_commitment_pct = min(Decimal('100.0'), ((expense_val / income_val) * Decimal('100'))).quantize(Decimal('0.1'))
+
+    # 5. Gráfico de Rosca + Breakdown: Despesas por Categoria (Período Selecionado)
+    category_expenses = expense_qs.values('category__name').annotate(total=Sum('value')).order_by('-total')
+
+    cat_colors = [
+        '#00DC82', '#3B82F6', '#F59E0B', '#F87171', '#E2E8F0',
+        '#10B981', '#60A5FA', '#FBBF24', '#EF4444', '#64748B'
+    ]
+    category_labels = []
+    category_values = []
+    category_breakdown = []
+    for idx, c in enumerate(category_expenses):
+        c_name = c['category__name'] or 'Geral'
+        c_val = c['total'] or Decimal('0')
+        c_pct = ((c_val / expense_val) * Decimal('100')).quantize(Decimal('0.1')) if expense_val > 0 else Decimal('0.0')
+        color = cat_colors[idx % len(cat_colors)]
+        category_labels.append(c_name)
+        category_values.append(float(c_val))
+        category_breakdown.append({
+            'name': c_name,
+            'value': c_val,
+            'pct': c_pct,
+            'color': color,
+        })
 
     # 6. Gráfico de Evolução Mensal (Fluxo Mensal)
     if selected_month == 'all':
@@ -135,6 +169,7 @@ def dashboard(request):
     evolution_labels = list(months_data.keys())
     evolution_income = [months_data[m]['income'] for m in evolution_labels]
     evolution_expense = [months_data[m]['expense'] for m in evolution_labels]
+    evolution_net = [round(months_data[m]['income'] - months_data[m]['expense'], 2) for m in evolution_labels]
 
     # 7. Transações do Período Selecionado
     period_transactions_list = period_transactions.select_related('category').all().order_by('-date', '-created_at')
@@ -147,16 +182,28 @@ def dashboard(request):
         
         'balance_val': balance_val,
         'balance_no_credit_val': balance_no_credit_val,
+        'savings_rate_pct': savings_rate_pct,
+        'expense_commitment_pct': expense_commitment_pct,
         'income_val': income_val,
+        'income_count': income_count,
+        'fixed_income_val': fixed_income_val,
+        'fixed_income_pct': fixed_income_pct,
         'extra_income_val': extra_income_val,
         'expense_val': expense_val,
+        'expense_count': expense_count,
+        'fixed_expense_val': fixed_expense_val,
+        'fixed_expense_pct': fixed_expense_pct,
         'credit_expense_val': credit_expense_val,
+        'debit_pix_expense_val': debit_pix_expense_val,
+        'credit_share_pct': credit_share_pct,
+        'category_breakdown': category_breakdown,
         
         'recent_transactions': period_transactions_list,
         'categories': categories,
         'evolution_labels': json.dumps(evolution_labels),
         'evolution_income': json.dumps(evolution_income),
         'evolution_expense': json.dumps(evolution_expense),
+        'evolution_net': json.dumps(evolution_net),
         'category_labels': json.dumps(category_labels),
         'category_values': json.dumps(category_values),
     }

@@ -7,6 +7,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.overview, name='overview'),
     path('metas/', views.goals, name='goals'),
+    path('metas/checklist/<int:item_id>/toggle/', views.toggle_checklist_item, name='toggle_checklist_item'),
+    path('metas/checklist/<int:item_id>/excluir/', views.delete_checklist_item, name='delete_checklist_item'),
+    path('configuracoes/', views.settings_view, name='settings'),
     path('investimentos/', include('investments.urls')),
     path('carteira/', include('budget.urls')),
 

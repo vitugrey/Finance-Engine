@@ -1,131 +1,459 @@
 {% extends 'base.html' %}
-{% load humanize %}
 {% load static %}
+{% load l10n %}
 
-{% block title %}Visão Geral | Kallia{% endblock %}
-{% block page_title %}Visão Geral{% endblock %}
-{% block page_subtitle %}Consolidação de todo o seu dinheiro{% endblock %}
+{% block title %}GreyWorks Finance - Visão Geral Executiva{% endblock %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/overview.css' %}">
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/overview.css' %}?v=20261028c">
+{% endblock %}
+
+{% block header_title %}Visão Geral Consolidada{% endblock %}
+{% block header_subtitle %}Painel executivo de patrimônio, eficiência de caixa e diagnóstico financeiro · <strong class="text-success">{{ profile_name }}</strong>{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'goals' %}" class="btn-outline-green">
+    <i class="ri-compass-3-line"></i> Simulador & Metas
+</a>
+<a href="{% url 'settings' %}" class="btn-secondary">
+    <i class="ri-sliders-line"></i> Personalizar Demo
+</a>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-grid">
-    <!-- Card Principal: Total Consolidado (Patrimônio + Saldo Mensal) -->
-    <div class="panel kpi-card overview-consolidated-card">
-        <div class="kpi-header">
-            <div class="kpi-icon overview-icon-container">
-                <i class='bx bx-coin-stack'></i>
-            </div>
-            <div class="overview-header-title">
-                <span class="tag">Total Consolidado</span>
-                <span class="subtitle">Patrimônio + Saldo do Mês ({{ current_month_name }})</span>
-            </div>
-        </div>
-        <div class="kpi-value overview-kpi-val">
-            R${{ total_consolidated|floatformat:2|intcomma }}
-        </div>
-    </div>
-
-    <!-- Card Lateral: Dinheiro Líquido da Carteira do Mês -->
-    <div class="panel kpi-card overview-wallet-card">
-        <div class="kpi-header">
-            <div class="kpi-icon {% if month_balance >= 0 %}icon-green{% else %}icon-red{% endif %}" style="width: 44px; height: 44px; font-size: 22px; border-radius: 10px;">
-                <i class='bx bx-wallet'></i>
-            </div>
-            <div class="overview-header-title">
-                <span class="tag">Saldo da Carteira</span>
-                <span class="subtitle">Resultado em {{ current_month_name }}</span>
+<!-- 1. LINHA DE 4 KPIs EXECUTIVOS COM BARRA DE PROGRESSO -->
+<div class="goals-kpi-grid">
+    <!-- KPI 1: Patrimônio Consolidado -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-green"><i class="ri-vip-crown-2-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Patrimônio Consolidado</span>
+                <span class="goal-kpi-pct font-mono">{{ patrimony_progress|floatformat:1 }}% da Meta</span>
             </div>
         </div>
-        <div class="kpi-value overview-kpi-val val-wallet" style="color: {% if month_balance >= 0 %}var(--success){% else %}var(--danger){% endif %};">
-            R${{ month_balance|floatformat:2|intcomma }}
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ total_consolidated|floatformat:2 }}</span>
+            <span class="target-val">/ R$ {{ config.patrimony_target|floatformat:0 }}</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-green" style="width: {{ patrimony_progress|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Ativos: <strong class="text-white">R$ {{ total_patrimony|floatformat:2 }}</strong> · Saldo Mês: <strong class="{% if month_balance >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ month_balance|floatformat:2 }}</strong>
         </div>
     </div>
 
-    <!-- Seção Esquerda: Detalhes do Fluxo de Caixa (Mensal) -->
-    <div class="panel overview-grid-panel">
-        <div>
-            <div class="panel-header overview-panel-title-wrapper">
-                <h3 class="panel-title overview-panel-title">
-                    <i class='bx bx-transfer-alt' style="color: var(--success);"></i>
-                    Fluxo de Caixa ({{ current_month_name }})
-                </h3>
-            </div>
-            
-            <div class="overview-flow-list">
-                <!-- Dinheiro Recebido -->
-                <div class="overview-flow-item flow-income">
-                    <div class="overview-flow-label">
-                        <i class='bx bx-trending-up' style="color: var(--success);"></i>
-                        <span>Dinheiro Recebido</span>
-                    </div>
-                    <span class="overview-flow-val val-income">R${{ month_income|floatformat:2|intcomma }}</span>
-                </div>
-
-                <!-- Dinheiro Gasto -->
-                <div class="overview-flow-item flow-expense">
-                    <div class="overview-flow-label">
-                        <i class='bx bx-trending-down' style="color: var(--danger);"></i>
-                        <span>Despesas do Mês</span>
-                    </div>
-                    <span class="overview-flow-val val-expense">R${{ month_expense|floatformat:2|intcomma }}</span>
-                </div>
-            </div>
-
-            <!-- Barra de Economia -->
-            <div class="overview-progress-section">
-                <div class="overview-progress-header">
-                    <span>Eficiência de Poupança</span>
-                    <span class="pct">{{ savings_pct }}% economizado</span>
-                </div>
-                <div class="overview-progress-bar-bg">
-                    <div class="overview-progress-bar-fill" style="width: {{ savings_pct }}%;"></div>
-                </div>
+    <!-- KPI 2: Portfólio de Ativos & Rentabilidade -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-blue"><i class="ri-stock-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Portfólio de Ativos</span>
+                <span class="goal-kpi-pct font-mono {% if total_rentabilidade >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if total_rentabilidade >= 0 %}+{% endif %}{{ total_rentabilidade_perc|floatformat:2 }}%
+                </span>
             </div>
         </div>
-
-        <a href="{% url 'budget:dashboard' %}" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s;">
-            <i class='bx bx-wallet' style="font-size: 18px;"></i>
-            Acessar Fluxo de Caixa
-        </a>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ total_patrimony|floatformat:2 }}</span>
+            <span class="target-val">Custo R$ {{ total_invested|floatformat:0 }}</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-blue" style="width: 100%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Lucro de Capital: <strong class="{% if total_rentabilidade >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ total_rentabilidade|floatformat:2 }}</strong>
+        </div>
     </div>
 
-    <!-- Seção Direita: Resumo de Portfólio de Investimentos -->
-    <div class="panel overview-grid-panel">
-        <div>
-            <div class="panel-header overview-panel-title-wrapper">
-                <h3 class="panel-title overview-panel-title">
-                    <i class='bx bx-line-chart' style="color: var(--accent-primary);"></i>
-                    Portfólio de Investimentos
-                </h3>
+    <!-- KPI 3: Fluxo de Caixa & Taxa de Poupança -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-purple"><i class="ri-wallet-3-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Resultado ({{ current_month_name }})</span>
+                <span class="goal-kpi-pct font-mono">Poupança {{ savings_pct|floatformat:1 }}%</span>
             </div>
-
-            <div class="overview-investments-summary">
-                <span class="label">Patrimônio de Investimentos</span>
-                <span class="val">R${{ total_patrimony|floatformat:2|intcomma }}</span>
-            </div>
-
-            <p class="overview-investments-desc">
-                Seu portfólio consolida todas as suas posições importadas automaticamente da B3, bem como criptoativos (BTC) e fundos de liquidez (Nubank) cadastrados manualmente.
-            </p>
         </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val {% if month_balance >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ month_balance|floatformat:2 }}</span>
+            <span class="target-val">líquido</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill {% if savings_pct >= 20 %}fill-green{% else %}fill-amber{% endif %}" style="width: {{ savings_pct|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Entradas <strong class="text-success">R$ {{ month_income|floatformat:0 }}</strong> · Saídas <strong class="text-danger">R$ {{ month_expense|floatformat:0 }}</strong>
+        </div>
+    </div>
 
-        <div class="overview-actions-column">
-            <a href="{% url 'investments:dashboard' %}" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s; background: rgba(99, 102, 241, 0.12); color: var(--accent-primary); border: 1px solid rgba(99, 102, 241, 0.25);">
-                <i class='bx bx-chart' style="font-size: 18px;"></i>
-                Dashboard de Ativos
-            </a>
-            <div class="overview-actions-row">
-                <a href="{% url 'investments:manual_investments' %}" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 10px; text-decoration: none; font-weight: 500; font-size: 13px; transition: all 0.2s; background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2);">
-                    <i class='bx bx-plus' style="font-size: 16px;"></i> Lançamento Manual
+    <!-- KPI 4: Renda Passiva & Dividend Yield -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-amber"><i class="ri-money-dollar-circle-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Renda Passiva (Média)</span>
+                <span class="goal-kpi-pct font-mono">DY {{ dividend_yield_ttm|floatformat:2 }}%</span>
+            </div>
+        </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ avg_dividend|floatformat:2 }}</span>
+            <span class="target-val">/ R$ {{ config.passive_income_target|floatformat:0 }}</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-amber" style="width: {{ passive_progress|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Acumulado 12m: <strong class="text-white">R$ {{ ttm_dividends|floatformat:2 }}</strong> ({{ passive_progress|floatformat:1 }}% da meta)
+        </div>
+    </div>
+</div>
+
+<!-- 2. GRID ANALÍTICO PRINCIPAL: FLUXO DE CAIXA + ALOCAÇÃO (ESQUERDA) | DIAGNÓSTICO + TOP ATIVOS (DIREITA) -->
+<div class="overview-main-grid">
+    <!-- Coluna Esquerda (7 colunas) -->
+    <div class="overview-col-left">
+        <!-- Gráfico de Evolução de Caixa 6 Meses -->
+        <div class="panel overview-chart-panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="ri-bar-chart-grouped-line text-success"></i> Dinâmica de Caixa & Geração de Excedente (6 Meses)</h2>
+                    <p class="panel-desc">Comparativo mensal entre receitas, despesas e saldo líquido disponível para aporte</p>
+                </div>
+                <a href="{% url 'budget:dashboard' %}" class="btn-secondary btn-sm">
+                    Ver Carteira <i class="ri-arrow-right-up-line"></i>
                 </a>
-                <a href="{% url 'goals' %}" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 10px; text-decoration: none; font-weight: 500; font-size: 13px; transition: all 0.2s; background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2);">
-                    <i class='bx bx-target-lock' style="font-size: 16px;"></i> Acessar Metas
+            </div>
+            <div class="overview-chart-box">
+                <canvas id="overviewCashflowChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Alocação Macro por Classe -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="ri-pie-chart-2-line text-success"></i> Distribuição Estratégica do Portfólio</h2>
+                    <p class="panel-desc">Participação atual das 4 classes de ativos no patrimônio investido</p>
+                </div>
+                <a href="{% url 'investments:dashboard' %}" class="btn-secondary btn-sm">
+                    Abrir Investimentos <i class="ri-arrow-right-up-line"></i>
                 </a>
+            </div>
+            <div class="ov-allocation-grid">
+                {% for item in allocation_summary %}
+                <div class="ov-alloc-card">
+                    <div class="ov-alloc-top">
+                        <span class="ov-alloc-dot" style="background-color: {{ item.color }};"></span>
+                        <span class="ov-alloc-name">{{ item.name }}</span>
+                        <span class="ov-alloc-pct font-mono">{{ item.pct|floatformat:1 }}%</span>
+                    </div>
+                    <div class="ov-alloc-val font-mono">R$ {{ item.value|floatformat:2 }}</div>
+                    <div class="goal-mini-bar">
+                        <div class="goal-mini-fill" style="width: {{ item.pct|unlocalize }}%; background-color: {{ item.color }};"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna Direita (5 colunas) -->
+    <div class="overview-col-right">
+        <!-- Diagnóstico de Saúde Financeira -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="ri-pulse-line text-success"></i> Diagnóstico de Saúde & Liquidez</h2>
+                    <p class="panel-desc">Indicadores estruturais de risco, liquidez e eficiência orçamentária</p>
+                </div>
+            </div>
+
+            <div class="diagnostic-list">
+                <!-- 1. Autonomia de Caixa -->
+                <div class="diag-item">
+                    <div class="diag-header">
+                        <span class="diag-title"><i class="ri-shield-check-line text-success"></i> Autonomia de Reserva (Runway)</span>
+                        <span class="diag-badge badge-green font-mono">{{ runway_months|floatformat:1 }} meses</span>
+                    </div>
+                    <p class="diag-sub">Reserva em Renda Fixa (<strong class="font-mono">R$ {{ fixed_income_patrimony|floatformat:2 }}</strong>) dividida pelo custo mensal médio.</p>
+                </div>
+
+                <!-- 2. Comprometimento da Renda -->
+                <div class="diag-item">
+                    <div class="diag-header">
+                        <span class="diag-title"><i class="ri-scales-3-line text-info"></i> Comprometimento da Receita</span>
+                        <span class="diag-badge {% if expense_commitment_pct <= 70 %}badge-green{% elif expense_commitment_pct <= 85 %}badge-amber{% else %}badge-red{% endif %} font-mono">
+                            {{ expense_commitment_pct|floatformat:1 }}%
+                        </span>
+                    </div>
+                    <div class="goal-mini-bar">
+                        <div class="goal-mini-fill {% if expense_commitment_pct <= 70 %}fill-green{% elif expense_commitment_pct <= 85 %}fill-amber{% else %}fill-red{% endif %}" style="width: {{ expense_commitment_pct|unlocalize }}%;"></div>
+                    </div>
+                    <p class="diag-sub">Ideal executivo: manter despesas abaixo de 70% da receita líquida.</p>
+                </div>
+
+                <!-- 3. Custos Fixos -->
+                <div class="diag-item">
+                    <div class="diag-header">
+                        <span class="diag-title"><i class="ri-home-gear-line text-warning"></i> Peso de Custos Fixos no Mês</span>
+                        <span class="diag-badge badge-amber font-mono">{{ fixed_expense_pct|floatformat:1 }}% (R$ {{ fixed_expenses_month|floatformat:0 }})</span>
+                    </div>
+                    <div class="goal-mini-bar">
+                        <div class="goal-mini-fill fill-amber" style="width: {{ fixed_expense_pct|unlocalize }}%;"></div>
+                    </div>
+                </div>
+
+                <!-- 4. Exposição Cartão -->
+                <div class="diag-item">
+                    <div class="diag-header">
+                        <span class="diag-title"><i class="ri-bank-card-line text-danger"></i> Exposição em Cartão de Crédito</span>
+                        <span class="diag-badge badge-blue font-mono">{{ credit_expense_pct|floatformat:1 }}% (R$ {{ credit_expenses_month|floatformat:0 }})</span>
+                    </div>
+                    <div class="goal-mini-bar">
+                        <div class="goal-mini-fill fill-blue" style="width: {{ credit_expense_pct|unlocalize }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maiores Posições do Portfólio -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="ri-medal-line text-success"></i> Maiores Posições em Carteira</h2>
+                    <p class="panel-desc">Top 4 ativos por volume financeiro consolidado</p>
+                </div>
+            </div>
+            <div class="top-assets-list">
+                {% for asset in top_assets %}
+                <div class="top-asset-row">
+                    <div class="asset-cell">
+                        <div class="asset-icon">{{ asset.ticker|slice:":4" }}</div>
+                        <div class="asset-info">
+                            <span class="asset-ticker">{{ asset.ticker }}</span>
+                            <span class="asset-type">{{ asset.type }}</span>
+                        </div>
+                    </div>
+                    <div class="top-asset-values">
+                        <span class="top-asset-patrimony font-mono">R$ {{ asset.patrimony|floatformat:2 }}</span>
+                        <span class="top-asset-profit font-mono {% if asset.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if asset.profit >= 0 %}+{% endif %}{{ asset.profit_pct|floatformat:1 }}%
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">Nenhum ativo cadastrado.</p>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<!-- 3. GRID OPERACIONAL INFERIOR: ÚLTIMAS TRANSAÇÕES + ROTINA & ATALHOS -->
+<div class="overview-bottom-grid">
+    <!-- Últimas Movimentações -->
+    <div class="panel overview-tx-panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title"><i class="ri-exchange-dollar-line text-success"></i> Últimas Movimentações Financeiras</h2>
+                <p class="panel-desc">Lançamentos mais recentes registrados na Carteira</p>
+            </div>
+            <a href="{% url 'budget:dashboard' %}" class="btn-outline-green btn-sm">
+                Gerenciar Lançamentos
+            </a>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Modalidade</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in recent_tx %}
+                    <tr>
+                        <td class="font-mono text-secondary">{{ tx.date|date:"d/m/Y" }}</td>
+                        <td class="font-weight-600 text-white">{{ tx.description }}</td>
+                        <td><span class="tag">{{ tx.category.name|default:"Geral" }}</span></td>
+                        <td>
+                            {% if tx.transaction_type == 'income' %}
+                                <span class="ov-pill pill-green">Receita</span>
+                            {% elif tx.is_credit %}
+                                <span class="ov-pill pill-amber">Crédito</span>
+                            {% else %}
+                                <span class="ov-pill pill-blue">À Vista / Pix</span>
+                            {% endif %}
+                        </td>
+                        <td class="value-cell font-mono {% if tx.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                            {% if tx.transaction_type == 'income' %}+{% else %}-{% endif %} R$ {{ tx.value|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                            Nenhuma transação registrada recentemente.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Status da Rotina Mensal & Atalhos Executivos -->
+    <div class="panel overview-shortcuts-panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title"><i class="ri-checkbox-multiple-line text-success"></i> Governança & Atalhos</h2>
+                <p class="panel-desc">Status do checklist mensal e navegação rápida</p>
+            </div>
+            <span class="tag font-mono">{{ checklist_done }}/{{ checklist_total }} ({{ checklist_pct }}%)</span>
+        </div>
+
+        <div class="ov-checklist-box">
+            <div class="ov-checklist-info">
+                <span>Progresso da Rotina Financeira do Mês</span>
+                <strong class="font-mono text-success">{{ checklist_pct }}% concluído</strong>
+            </div>
+            <div class="goal-mini-bar">
+                <div class="goal-mini-fill fill-green" style="width: {{ checklist_pct }}%;"></div>
+            </div>
+        </div>
+
+        <div class="ov-quick-links">
+            <a href="{% url 'investments:dashboard' %}" class="ov-quick-card">
+                <i class="ri-stock-line text-success"></i>
+                <div>
+                    <strong>Portfólio & Proventos</strong>
+                    <span>Cotação B3, DY e dividendos</span>
+                </div>
+            </a>
+            <a href="{% url 'budget:dashboard' %}" class="ov-quick-card">
+                <i class="ri-wallet-3-line text-info"></i>
+                <div>
+                    <strong>Fluxo de Caixa Mensal</strong>
+                    <span>Receitas, despesas e cartões</span>
+                </div>
+            </a>
+            <a href="{% url 'goals' %}" class="ov-quick-card">
+                <i class="ri-compass-3-line text-warning"></i>
+                <div>
+                    <strong>Simulador & Alocação</strong>
+                    <span>Juros compostos e rebalanceamento</span>
+                </div>
+            </a>
+            <a href="{% url 'settings' %}" class="ov-quick-card">
+                <i class="ri-settings-4-line text-primary"></i>
+                <div>
+                    <strong>Configurações da Demo</strong>
+                    <span>Metas, pesos e restauração</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.OVERVIEW_DATA = {
+        labels: {{ ov_labels|safe }},
+        income: {{ ov_income|safe }},
+        expense: {{ ov_expense|safe }},
+        net: {{ ov_net|safe }}
+    };
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('overviewCashflowChart');
+    if (!ctx || !window.OVERVIEW_DATA) return;
+
+    Chart.defaults.color = '#9CA3AF';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: window.OVERVIEW_DATA.labels,
+            datasets: [
+                {
+                    type: 'line',
+                    label: 'Excedente Líquido (R$)',
+                    data: window.OVERVIEW_DATA.net,
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#3B82F6',
+                    pointRadius: 4,
+                    tension: 0.35,
+                    order: 0
+                },
+                {
+                    type: 'bar',
+                    label: 'Receitas (R$)',
+                    data: window.OVERVIEW_DATA.income,
+                    backgroundColor: '#00DC82',
+                    borderRadius: 6,
+                    barPercentage: 0.55,
+                    order: 1
+                },
+                {
+                    type: 'bar',
+                    label: 'Despesas (R$)',
+                    data: window.OVERVIEW_DATA.expense,
+                    backgroundColor: '#F87171',
+                    borderRadius: 6,
+                    barPercentage: 0.55,
+                    order: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'end',
+                    labels: { usePointStyle: true, boxWidth: 8, color: '#E2E8F0' }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(16, 19, 27, 0.95)',
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#E2E8F0',
+                    borderColor: '#262B35',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.y || 0;
+                            return context.dataset.label + ': ' + val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false, drawBorder: false }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + (value / 1000).toFixed(0) + 'k';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Gráficos de Dividendos | Kallia{% endblock %}
-{% block page_title %}Meus Dividendos{% endblock %}
-{% block page_subtitle %}Histórico de recebimento de proventos{% endblock %}
+{% block title %}Gráficos de Dividendos | GreyWorks Finance{% endblock %}
+{% block page_title %}Análise de Proventos{% endblock %}
+{% block page_subtitle %}Histórico de geração de renda passiva ao longo do tempo{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/investments.css' %}">
 {% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'investments:dashboard' %}" class="btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(99, 102, 241, 0.15); color: var(--accent-primary); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; font-weight: 500; font-size: 14px; transition: all 0.2s;">
+<a href="{% url 'investments:dashboard' %}" class="btn-secondary">
     <i class='bx bx-arrow-back' style="font-size: 18px;"></i>
     Voltar
 </a>
@@ -20,7 +20,7 @@
 <div class="dashboard-grid">
     <div class="panel panel-wide" style="grid-column: 1 / -1;">
         <div class="panel-header" style="border-bottom: none; padding-bottom: 0;">
-            <h3 class="panel-title">Evolução dos Dividendos</h3>
+            <h3 class="panel-title">Evolução dos Proventos</h3>
         </div>
 
         <div class="tabs-container" style="padding: 0 24px;">
@@ -51,7 +51,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<!-- Passa dados dinâmicos do Django para o JS externo -->
 <script>
     const yearlyLabels = {{ yearly_labels|safe }};
     const yearlyData = {{ yearly_data|safe }};

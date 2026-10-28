@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Configurações | GreyWorks Finance{% endblock %}
+{% block page_title %}Configurações & Personalização{% endblock %}
+{% block page_subtitle %}Personalize metas patrimoniais, pesos da carteira, rotina mensal e dados do ambiente demo{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/budget.css' %}">
+<link rel="stylesheet" href="{% static 'css/settings.css' %}">
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'goals' %}" class="btn-outline-green">
+    <i class='bx bx-target-lock' style="font-size: 17px;"></i>
+    <span>Ver Simulador & Metas</span>
+</a>
+<a href="{% url 'overview' %}" class="btn-secondary">
+    <i class='bx bx-grid-alt' style="font-size: 17px;"></i>
+    <span>Visão Geral</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="settings-grid">
+    <!-- 1. Parâmetros e Metas Patrimoniais -->
+    <div class="panel settings-col">
+        <div class="panel-header settings-panel-header">
+            <div>
+                <h3 class="panel-title">
+                    <i class='bx bx-trophy' style="color: var(--accent-primary);"></i>
+                    Perfil & Metas Financeiras
+                </h3>
+                <p class="settings-subtitle">Defina os alvos que alimentam os indicadores e o simulador de independência.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{% url 'settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_financial_settings">
+
+            <div class="form-group">
+                <label for="profile_name">Identificação do Portfólio / Cliente</label>
+                <input type="text" id="profile_name" name="profile_name" class="form-control" value="{{ config.profile_name }}" required>
+            </div>
+
+            <div class="settings-2col">
+                <div class="form-group">
+                    <label for="patrimony_target">Meta Principal de Patrimônio (R$)</label>
+                    <input type="text" id="patrimony_target" name="patrimony_target" class="form-control font-mono" value="{{ config.patrimony_target|stringformat:'.2f' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="contribution_target">Meta de Aporte Mensal (R$)</label>
+                    <input type="text" id="contribution_target" name="contribution_target" class="form-control font-mono" value="{{ config.contribution_target|stringformat:'.2f' }}" required>
+                </div>
+            </div>
+
+            <div class="settings-2col">
+                <div class="form-group">
+                    <label for="emergency_fund_target">Meta Reserva de Liquidez (R$)</label>
+                    <input type="text" id="emergency_fund_target" name="emergency_fund_target" class="form-control font-mono" value="{{ config.emergency_fund_target|stringformat:'.2f' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="passive_income_target">Meta Renda Passiva Mensal (R$)</label>
+                    <input type="text" id="passive_income_target" name="passive_income_target" class="form-control font-mono" value="{{ config.passive_income_target|stringformat:'.2f' }}" required>
+                </div>
+            </div>
+
+            <div class="settings-2col">
+                <div class="form-group">
+                    <label for="benchmark_annual_rate">Benchmark Anual / CDI (% a.a.)</label>
+                    <input type="text" id="benchmark_annual_rate" name="benchmark_annual_rate" class="form-control font-mono" value="{{ config.benchmark_annual_rate|stringformat:'.2f' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="simulator_monthly_rate">Taxa Padrão do Simulador (% a.m.)</label>
+                    <input type="text" id="simulator_monthly_rate" name="simulator_monthly_rate" class="form-control font-mono" value="{{ config.simulator_monthly_rate|stringformat:'.2f' }}" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; margin-top: 6px;">
+                <i class='bx bx-save' style="font-size: 18px;"></i>
+                Salvar Metas & Parâmetros
+            </button>
+        </form>
+    </div>
+
+    <!-- 2. Pesos da Estratégia de Alocação (Rebalanceamento) -->
+    <div class="panel settings-col">
+        <div class="panel-header settings-panel-header">
+            <div>
+                <h3 class="panel-title">
+                    <i class='bx bx-pie-chart-alt-2' style="color: var(--accent-primary);"></i>
+                    Pesos da Estratégia de Alocação
+                </h3>
+                <p class="settings-subtitle">Configure a distribuição ideal entre as 4 classes (a soma deve ser 100%).</p>
+            </div>
+            <span id="weights-sum-badge" class="tag font-mono" style="background: var(--success-bg); color: var(--accent-primary);">
+                Soma: 100.0%
+            </span>
+        </div>
+
+        <!-- Presets Rápidos -->
+        <div class="presets-row">
+            <span class="presets-label">Presets:</span>
+            <button type="button" class="preset-btn" onclick="applyPreset(25, 25, 25, 25)">ARCA Clássico (25/25/25/25)</button>
+            <button type="button" class="preset-btn" onclick="applyPreset(20, 35, 35, 10)">Foco Renda (20/35/35/10)</button>
+            <button type="button" class="preset-btn" onclick="applyPreset(35, 20, 20, 25)">Crescimento Global (35/20/20/25)</button>
+        </div>
+
+        <form method="POST" action="{% url 'settings' %}" id="allocationForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_allocation">
+
+            <div class="settings-2col">
+                <div class="form-group">
+                    <label for="target_stocks_pct">Ações & BDRs (%)</label>
+                    <input type="number" step="0.5" min="0" max="100" id="target_stocks_pct" name="target_stocks_pct" class="form-control font-mono alloc-input" value="{{ config.target_stocks_pct|stringformat:'.1f' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="target_fiis_pct">Fundos Imobiliários - FIIs (%)</label>
+                    <input type="number" step="0.5" min="0" max="100" id="target_fiis_pct" name="target_fiis_pct" class="form-control font-mono alloc-input" value="{{ config.target_fiis_pct|stringformat:'.1f' }}" required>
+                </div>
+            </div>
+
+            <div class="settings-2col">
+                <div class="form-group">
+                    <label for="target_fixed_income_pct">Renda Fixa & Liquidez (%)</label>
+                    <input type="number" step="0.5" min="0" max="100" id="target_fixed_income_pct" name="target_fixed_income_pct" class="form-control font-mono alloc-input" value="{{ config.target_fixed_income_pct|stringformat:'.1f' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="target_global_pct">ETFs Internacionais & Cripto (%)</label>
+                    <input type="number" step="0.5" min="0" max="100" id="target_global_pct" name="target_global_pct" class="form-control font-mono alloc-input" value="{{ config.target_global_pct|stringformat:'.1f' }}" required>
+                </div>
+            </div>
+
+            <!-- Barra Visual Combinada -->
+            <div class="alloc-preview-bar">
+                <div id="bar-stocks" style="background: #F59E0B; width: 25%;" title="Ações"></div>
+                <div id="bar-fiis" style="background: #3B82F6; width: 25%;" title="FIIs"></div>
+                <div id="bar-rf" style="background: #00DC82; width: 25%;" title="Renda Fixa"></div>
+                <div id="bar-global" style="background: #E2E8F0; width: 25%;" title="ETFs / Global"></div>
+            </div>
+            <div class="alloc-preview-legend font-mono">
+                <span><i style="background:#F59E0B"></i> Ações</span>
+                <span><i style="background:#3B82F6"></i> FIIs</span>
+                <span><i style="background:#00DC82"></i> Renda Fixa</span>
+                <span><i style="background:#E2E8F0"></i> Global</span>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; margin-top: 16px;">
+                <i class='bx bx-check-shield' style="font-size: 18px;"></i>
+                Atualizar Estratégia de Alocação
+            </button>
+        </form>
+    </div>
+
+    <!-- 3. Gerenciador de Rotina Mensal (Checklist) -->
+    <div class="panel settings-col">
+        <div class="panel-header settings-panel-header">
+            <div>
+                <h3 class="panel-title">
+                    <i class='bx bx-list-check' style="color: var(--accent-primary);"></i>
+                    Rotina Financeira Mensal
+                </h3>
+                <p class="settings-subtitle">Customize as etapas do seu checklist mensal de execução financeira.</p>
+            </div>
+            <form method="POST" action="{% url 'settings' %}" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset_checklist_status">
+                <button type="submit" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                    <i class='bx bx-revision'></i> Reiniciar Mês
+                </button>
+            </form>
+        </div>
+
+        <form method="POST" action="{% url 'settings' %}" class="add-task-grid">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_checklist_item">
+            <div>
+                <label for="new_day">Dia</label>
+                <input type="number" id="new_day" name="day_of_month" min="1" max="31" value="5" class="form-control font-mono" required>
+            </div>
+            <div>
+                <label for="new_title">Descrição da Tarefa</label>
+                <input type="text" id="new_title" name="title" class="form-control" placeholder="Ex: Revisar proventos e aportar..." required>
+            </div>
+            <div>
+                <label for="new_tag">Categoria</label>
+                <select id="new_tag" name="category_tag" class="form-control">
+                    {% for val, label in tag_choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn-primary" style="height: 42px; width: 100%;">
+                    <i class='bx bx-plus'></i> Adicionar
+                </button>
+            </div>
+        </form>
+
+        <div class="settings-checklist-list">
+            {% for item in checklist_items %}
+            <div class="settings-checklist-row">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="tag font-mono" style="background: rgba(255,255,255,0.06);">DIA {{ item.day_of_month|stringformat:"02d" }}</span>
+                    <span style="font-size: 13.5px; color: var(--text-primary); font-weight: 500;">{{ item.title }}</span>
+                </div>
+                <form method="POST" action="{% url 'delete_checklist_item' item.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-delete-small" title="Excluir tarefa">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </form>
+            </div>
+            {% empty %}
+            <div style="text-align: center; color: var(--text-secondary); padding: 16px;">
+                Nenhuma tarefa cadastrada.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 4. Controle do Ambiente Demo & Portfólio GreyWorks -->
+    <div class="panel settings-col">
+        <div class="panel-header settings-panel-header">
+            <div>
+                <h3 class="panel-title">
+                    <i class='bx bx-data' style="color: var(--accent-primary);"></i>
+                    Ambiente Demo & Banco de Dados Local
+                </h3>
+                <p class="settings-subtitle">Gerencie os dados de demonstração ou adicione categorias de fluxo de caixa.</p>
+            </div>
+        </div>
+
+        <div class="demo-control-box">
+            <div class="demo-control-info">
+                <h4><i class='bx bx-bulb' style="color: var(--accent-primary);"></i> Modo Demonstração GreyWorks</h4>
+                <p>
+                    Popule instantaneamente o sistema com uma carteira executiva completa (Ações, FIIs, Renda Fixa, ETFs, Bitcoin),
+                    14 meses de proventos e 6 meses de fluxo de caixa para testar todos os gráficos e indicadores.
+                </p>
+            </div>
+            <div class="demo-control-actions">
+                <form method="POST" action="{% url 'settings' %}" style="flex: 1;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="seed_demo_data">
+                    <button type="submit" class="btn-outline-green" style="width: 100%; padding: 12px;">
+                        <i class='bx bx-refresh' style="font-size: 18px;"></i>
+                        Restaurar Dados de Demonstração
+                    </button>
+                </form>
+                <button type="button" onclick="openModal('clearDataModal')" class="btn-secondary" style="padding: 12px; color: var(--coral); border-color: rgba(248, 113, 113, 0.25);">
+                    <i class='bx bx-trash' style="font-size: 17px;"></i>
+                    Zerar Banco
+                </button>
+            </div>
+        </div>
+
+        <!-- Categorias de Orçamento -->
+        <div style="margin-top: 22px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-white);">Categorias de Fluxo de Caixa ({{ budget_categories|length }})</span>
+            </div>
+            <div class="categories-pills-wrap">
+                {% for cat in budget_categories %}
+                    <span class="tag">{{ cat.name }}</span>
+                {% empty %}
+                    <span style="font-size: 12.5px; color: var(--text-secondary);">Nenhuma categoria cadastrada.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMAÇÃO: ZERAR BANCO -->
+<div id="clearDataModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Zerar Todos os Lançamentos?</h3>
+            <button onclick="closeModal('clearDataModal')" class="close-btn">&times;</button>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+            Esta ação removerá todos os ativos, operações, dividendos e transações de fluxo de caixa do banco de dados local.
+            Você poderá restaurar os dados de demonstração a qualquer momento.
+        </p>
+        <form method="POST" action="{% url 'settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="clear_all_data">
+            <div class="form-actions">
+                <button type="button" onclick="closeModal('clearDataModal')" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-submit" style="background: var(--danger); color: #fff;">Confirmar Limpeza</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/budget.js' %}"></script>
+<script>
+    function updateAllocPreview() {
+        const s = parseFloat(document.getElementById('target_stocks_pct').value) || 0;
+        const f = parseFloat(document.getElementById('target_fiis_pct').value) || 0;
+        const r = parseFloat(document.getElementById('target_fixed_income_pct').value) || 0;
+        const g = parseFloat(document.getElementById('target_global_pct').value) || 0;
+        const sum = s + f + r + g;
+
+        const badge = document.getElementById('weights-sum-badge');
+        if (badge) {
+            badge.textContent = `Soma: ${sum.toFixed(1)}%`;
+            if (Math.abs(sum - 100) <= 0.5) {
+                badge.style.background = 'rgba(0, 220, 130, 0.12)';
+                badge.style.color = '#00DC82';
+            } else {
+                badge.style.background = 'rgba(239, 68, 68, 0.15)';
+                badge.style.color = '#F87171';
+            }
+        }
+
+        const total = sum > 0 ? sum : 100;
+        document.getElementById('bar-stocks').style.width = `${(s / total) * 100}%`;
+        document.getElementById('bar-fiis').style.width = `${(f / total) * 100}%`;
+        document.getElementById('bar-rf').style.width = `${(r / total) * 100}%`;
+        document.getElementById('bar-global').style.width = `${(g / total) * 100}%`;
+    }
+
+    function applyPreset(s, f, r, g) {
+        document.getElementById('target_stocks_pct').value = s.toFixed(1);
+        document.getElementById('target_fiis_pct').value = f.toFixed(1);
+        document.getElementById('target_fixed_income_pct').value = r.toFixed(1);
+        document.getElementById('target_global_pct').value = g.toFixed(1);
+        updateAllocPreview();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.alloc-input').forEach(inp => {
+            inp.addEventListener('input', updateAllocPreview);
+        });
+        updateAllocPreview();
+    });
+</script>
+{% endblock %}
+

@@ -1,5 +1,5 @@
 // ==========================================================================
-// GRÁFICOS DE EVOLUÇÃO DE PROVENTOS (INVESTIMENTOS)
+// GRÁFICOS DE EVOLUÇÃO DE PROVENTOS - GREYWORKS FINANCE
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", function() {
     const monthlyCanvas = document.getElementById('monthlyChart');
@@ -13,10 +13,10 @@ document.addEventListener("DOMContentLoaded", function() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#1f2937',
-                    titleColor: '#f3f4f6',
-                    bodyColor: '#d1d5db',
-                    borderColor: '#374151',
+                    backgroundColor: '#181C24',
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#E2E8F0',
+                    borderColor: '#262B35',
                     borderWidth: 1,
                     padding: 12,
                     callbacks: {
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             let label = context.dataset.label || '';
                             if (label) { label += ': '; }
                             if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }).format(context.parsed.y).replace('R$', 'R$').replace(/\s/g, '');
+                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
                             }
                             return label;
                         }
@@ -34,34 +34,34 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    grid: { color: '#1E2330' },
                     ticks: {
-                        color: '#9ca3af',
+                        color: '#64748B',
+                        font: { family: "'JetBrains Mono', monospace", size: 11 },
                         callback: function(value) {
-                            return 'R$' + new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
+                            return 'R$' + new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
                         }
                     }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#9ca3af' }
+                    ticks: { color: '#64748B', font: { family: "'JetBrains Mono', monospace", size: 11 } }
                 }
             }
         };
 
-        // Gráfico Mensal (Últimos 24 meses)
         if (typeof monthlyLabels !== 'undefined' && typeof monthlyData !== 'undefined') {
             new Chart(monthlyCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: monthlyLabels,
                     datasets: [{
-                        label: 'Dividendos',
+                        label: 'Proventos',
                         data: monthlyData,
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderColor: '#10b981',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#10b981',
+                        backgroundColor: 'rgba(0, 220, 130, 0.12)',
+                        borderColor: '#00DC82',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#00DC82',
                         fill: true,
                         tension: 0.3
                     }]
@@ -72,45 +72,43 @@ document.addEventListener("DOMContentLoaded", function() {
                         ...commonOptions.scales,
                         x: {
                             ...commonOptions.scales.x,
-                            ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 }
+                            ticks: { color: '#64748B', font: { family: "'JetBrains Mono', monospace", size: 11 }, maxRotation: 45, minRotation: 45 }
                         }
                     }
                 }
             });
         }
 
-        // Gráfico Anual
         if (yearlyCanvas) {
             new Chart(yearlyCanvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: yearlyLabels,
                     datasets: [{
-                        label: 'Dividendos por Ano',
+                        label: 'Proventos por Ano',
                         data: yearlyData,
-                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(0, 220, 130, 0.7)',
+                        borderColor: '#00DC82',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 6
                     }]
                 },
                 options: commonOptions
             });
         }
 
-        // Gráfico Desde o Início
         if (allTimeCanvas && typeof allTimeLabels !== 'undefined' && typeof allTimeData !== 'undefined') {
             new Chart(allTimeCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: allTimeLabels,
                     datasets: [{
-                        label: 'Dividendos',
+                        label: 'Proventos',
                         data: allTimeData,
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderColor: '#10b981',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#10b981',
+                        backgroundColor: 'rgba(0, 220, 130, 0.12)',
+                        borderColor: '#00DC82',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#00DC82',
                         fill: true,
                         tension: 0.3
                     }]
@@ -121,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         ...commonOptions.scales,
                         x: {
                             ...commonOptions.scales.x,
-                            ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 45 }
+                            ticks: { color: '#64748B', font: { family: "'JetBrains Mono', monospace", size: 11 }, maxRotation: 45, minRotation: 45 }
                         }
                     }
                 }

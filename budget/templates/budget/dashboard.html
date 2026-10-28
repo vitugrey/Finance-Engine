@@ -1,36 +1,42 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% load static %}
+{% load l10n %}
 
-{% block title %}Carteira | Kallia{% endblock %}
-{% block page_title %}Carteira (Fluxo de Caixa){% endblock %}
-{% block page_subtitle %}Controle de receitas, despesas e saldo pessoal{% endblock %}
+{% block title %}GreyWorks Finance - Carteira & Fluxo de Caixa{% endblock %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/budget.css' %}">
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget.css' %}?v=20261028c">
 {% endblock %}
 
+{% block header_title %}Carteira & Fluxo de Caixa{% endblock %}
+{% block header_subtitle %}Gestão executiva de receitas, estrutura de custos, exposição em cartão e taxa de poupança{% endblock %}
+
 {% block header_actions %}
-<button onclick="openModal('transactionModal')" class="btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(99, 102, 241, 0.15); color: var(--accent-primary); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;">
-    <i class='bx bx-plus' style="font-size: 18px;"></i>
-    Nova Transação
+<button type="button" onclick="openModal('transactionModal')" class="btn-primary">
+    <i class="ri-add-circle-line"></i> Nova Transação
 </button>
-<button onclick="openModal('categoryModal')" class="btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--panel-border); border-radius: 8px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s;">
-    <i class='bx bx-folder-plus' style="font-size: 18px;"></i>
-    Nova Categoria
+<button type="button" onclick="openModal('categoryModal')" class="btn-outline-green">
+    <i class="ri-folder-add-line"></i> Nova Categoria
 </button>
+<a href="{% url 'budget:transaction_list' %}" class="btn-secondary">
+    <i class="ri-file-list-3-line"></i> Histórico Completo
+</a>
 {% endblock %}
 
 {% block content %}
-<!-- Filtros Rápidos de Período -->
+<!-- BARRA DE FILTRO DE COMPETÊNCIA (MÊS / ANO) -->
 <div class="dashboard-filters">
     <div class="filter-title">
-        <i class='bx bx-calendar-event' style="font-size: 20px; color: var(--accent-primary);"></i>
-        Período do Balanço
+        <i class="ri-calendar-todo-line text-success" style="font-size: 20px;"></i>
+        <div>
+            <span>Competência de Análise</span>
+            <small class="filter-sub">Filtre os indicadores, gráficos e lançamentos por mês ou ano consolidado</small>
+        </div>
     </div>
     <form method="GET" action="{% url 'budget:dashboard' %}" class="filter-controls">
         <select name="month" class="select-filter">
-            <option value="all" {% if selected_month == 'all' %}selected{% endif %}>Ano Todo</option>
+            <option value="all" {% if selected_month == 'all' %}selected{% endif %}>Ano Consolidado (12m)</option>
             <option value="1" {% if selected_month == 1 %}selected{% endif %}>Janeiro</option>
             <option value="2" {% if selected_month == 2 %}selected{% endif %}>Fevereiro</option>
             <option value="3" {% if selected_month == 3 %}selected{% endif %}>Março</option>
@@ -51,161 +57,250 @@
             {% endfor %}
         </select>
 
-        <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 13px; cursor: pointer; border-radius: 8px; background: var(--accent-primary); border: none; color: #fff; display: flex; align-items: center; gap: 6px;">
-            <i class='bx bx-filter' style="font-size: 16px;"></i> Filtrar
+        <button type="submit" class="btn-primary btn-sm">
+            <i class="ri-filter-3-line"></i> Aplicar Período
         </button>
     </form>
 </div>
 
-<div class="dashboard-grid">
-    <!-- Top 3 Cards -->
-    <!-- Card 1: Balanço do Período -->
-    <div class="panel kpi-card">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-blue">
-                <i class='bx bx-wallet'></i>
+<!-- 1. LINHA DE 4 KPIs EXECUTIVOS DO FLUXO DE CAIXA -->
+<div class="goals-kpi-grid">
+    <!-- KPI 1: Resultado Líquido & Taxa de Poupança -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-green"><i class="ri-wallet-3-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Resultado Líquido</span>
+                <span class="goal-kpi-pct font-mono">Poupança {{ savings_rate_pct|floatformat:1 }}%</span>
             </div>
-            <span>Balanço do Período</span>
         </div>
-        <div class="kpi-value" style="color: {% if balance_val >= 0 %}var(--success){% else %}var(--danger){% endif %};">
-            R${{ balance_val|floatformat:2|intcomma }}
+        <div class="goal-kpi-numbers">
+            <span class="current-val {% if balance_val >= 0 %}text-success{% else %}text-danger{% endif %}">
+                R$ {{ balance_val|floatformat:2 }}
+            </span>
+            <span class="target-val">excedente</span>
         </div>
-        <div class="kpi-trend" style="background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 0;">
-            Sem crédito: <strong style="color: var(--text-primary);">R${{ balance_no_credit_val|floatformat:2|intcomma }}</strong>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill {% if savings_rate_pct >= 20 %}fill-green{% else %}fill-amber{% endif %}" style="width: {{ savings_rate_pct|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Caixa s/ Cartão: <strong class="text-white font-mono">R$ {{ balance_no_credit_val|floatformat:2 }}</strong>
         </div>
     </div>
 
-    <!-- Card 2: Receitas do Período -->
-    <div class="panel kpi-card">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-green">
-                <i class='bx bx-trending-up'></i>
+    <!-- KPI 2: Receitas Totais (Fixa vs Variável/Extra) -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-blue"><i class="ri-arrow-right-up-box-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Receitas do Período</span>
+                <span class="goal-kpi-pct font-mono">{{ fixed_income_pct|floatformat:0 }}% Recorrente</span>
             </div>
-            <span>Receitas do Período</span>
         </div>
-        <div class="kpi-value" style="color: var(--success);">R${{ income_val|floatformat:2|intcomma }}</div>
-        <div class="kpi-trend" style="background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 0;">
-            Extra: <strong style="color: var(--success);">R${{ extra_income_val|floatformat:2|intcomma }}</strong>
+        <div class="goal-kpi-numbers">
+            <span class="current-val text-success">R$ {{ income_val|floatformat:2 }}</span>
+            <span class="target-val">({{ income_count }} entradas)</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-blue" style="width: {{ fixed_income_pct|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Base: <strong class="text-white">R$ {{ fixed_income_val|floatformat:0 }}</strong> · Extra: <strong class="text-success">R$ {{ extra_income_val|floatformat:0 }}</strong>
         </div>
     </div>
 
-    <!-- Card 3: Despesas do Período -->
-    <div class="panel kpi-card">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-red">
-                <i class='bx bx-trending-down'></i>
+    <!-- KPI 3: Despesas Totais & Comprometimento -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-red"><i class="ri-arrow-right-down-box-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Despesas & Consumo</span>
+                <span class="goal-kpi-pct font-mono {% if expense_commitment_pct <= 70 %}text-success{% elif expense_commitment_pct <= 85 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ expense_commitment_pct|floatformat:1 }}% da Renda
+                </span>
             </div>
-            <span>Despesas do Período</span>
         </div>
-        <div class="kpi-value" style="color: var(--danger);">R${{ expense_val|floatformat:2|intcomma }}</div>
-        <div class="kpi-trend" style="background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 0;">
-            No crédito: <strong style="color: #f87171;">R${{ credit_expense_val|floatformat:2|intcomma }}</strong>
+        <div class="goal-kpi-numbers">
+            <span class="current-val text-danger">R$ {{ expense_val|floatformat:2 }}</span>
+            <span class="target-val">({{ expense_count }} saídas)</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill {% if expense_commitment_pct <= 70 %}fill-green{% elif expense_commitment_pct <= 85 %}fill-amber{% else %}fill-red{% endif %}" style="width: {{ expense_commitment_pct|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Custos Fixos: <strong class="text-warning">R$ {{ fixed_expense_val|floatformat:2 }}</strong> ({{ fixed_expense_pct|floatformat:1 }}%)
         </div>
     </div>
 
-    <!-- Bottom 2 Panels: Gráficos -->
-    <!-- Gráfico 1: Evolução Mensal -->
-    <div class="panel panel-half">
+    <!-- KPI 4: Exposição em Cartão vs À Vista -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-amber"><i class="ri-bank-card-2-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Fatura de Cartão</span>
+                <span class="goal-kpi-pct font-mono">{{ credit_share_pct|floatformat:1 }}% dos Gastos</span>
+            </div>
+        </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ credit_expense_val|floatformat:2 }}</span>
+            <span class="target-val">no crédito</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-amber" style="width: {{ credit_share_pct|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            À Vista / Pix: <strong class="text-white">R$ {{ debit_pix_expense_val|floatformat:2 }}</strong>
+        </div>
+    </div>
+</div>
+
+<!-- 2. GRID ANALÍTICO: EVOLUÇÃO MENSAL (7 COLS) + DESPESAS POR CATEGORIA (5 COLS) -->
+<div class="budget-main-grid">
+    <!-- Evolução Comparativa Mensal -->
+    <div class="panel budget-col-evo">
         <div class="panel-header">
-            <h3 class="panel-title">Fluxo Mensal (Histórico)</h3>
+            <div>
+                <h2 class="panel-title"><i class="ri-bar-chart-grouped-line text-success"></i> Evolução Mensal Comparativa & Saldo Líquido</h2>
+                <p class="panel-desc">Histórico de receitas, despesas e geração de caixa livre por competência</p>
+            </div>
         </div>
-        <div style="height: 280px; position: relative;">
+        <div class="budget-evo-chart-box">
             <canvas id="evolutionChart"></canvas>
         </div>
     </div>
 
-    <!-- Gráfico 2: Despesas por Categoria -->
-    <div class="panel panel-half">
+    <!-- Distribuição de Despesas por Categoria -->
+    <div class="panel budget-col-cat">
         <div class="panel-header">
-            <h3 class="panel-title">Despesas por Categoria</h3>
+            <div>
+                <h2 class="panel-title"><i class="ri-pie-chart-line text-success"></i> Raio-X por Categoria</h2>
+                <p class="panel-desc">Onde o orçamento do período está alocado</p>
+            </div>
         </div>
-        <div style="height: 280px; position: relative;">
+
+        <div class="budget-cat-chart-box">
             <canvas id="categoryChart"></canvas>
+        </div>
+
+        <div class="budget-cat-breakdown">
+            {% for cat in category_breakdown %}
+            <div class="budget-cat-row">
+                <div class="budget-cat-top">
+                    <span class="budget-cat-dot" style="background-color: {{ cat.color }};"></span>
+                    <span class="budget-cat-name">{{ cat.name }}</span>
+                    <span class="budget-cat-pct font-mono">{{ cat.pct|floatformat:1 }}%</span>
+                    <span class="budget-cat-val font-mono">R$ {{ cat.value|floatformat:2 }}</span>
+                </div>
+                <div class="goal-mini-bar">
+                    <div class="goal-mini-fill" style="width: {{ cat.pct|unlocalize }}%; background-color: {{ cat.color }};"></div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted" style="font-size: 13px; text-align: center;">Sem despesas registradas no período.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- 3. TABELA DE MOVIMENTAÇÕES COM BUSCA E FILTROS RÁPIDOS -->
+<div class="panel budget-tx-panel">
+    <div class="panel-header budget-tx-header">
+        <div>
+            <h2 class="panel-title" style="display: flex; align-items: center; gap: 10px;">
+                <i class="ri-list-check-2 text-success"></i>
+                Movimentações do Período
+                <span class="tag font-mono" style="background: var(--accent-soft); color: var(--accent-primary);">
+                    {{ recent_transactions|length }} lançamentos
+                </span>
+            </h2>
+            <p class="panel-desc">Clique em qualquer lançamento para editar valores, categorias ou recorrência</p>
+        </div>
+
+        <!-- Barra de Busca e Pílulas de Filtro -->
+        <div class="budget-tx-controls">
+            <div class="budget-search-wrap">
+                <i class="ri-search-line"></i>
+                <input type="text" id="txSearchInput" placeholder="Buscar descrição ou categoria...">
+            </div>
+            <div class="budget-filter-pills" id="txFilterPills">
+                <button type="button" class="budget-pill active" data-filter="all">Todos</button>
+                <button type="button" class="budget-pill" data-filter="income">Receitas</button>
+                <button type="button" class="budget-pill" data-filter="expense">Despesas</button>
+                <button type="button" class="budget-pill" data-filter="credit">Crédito</button>
+                <button type="button" class="budget-pill" data-filter="fixed">Fixos</button>
+            </div>
         </div>
     </div>
 
-    <!-- Tabela de Transações Total no Período -->
-    <div class="panel panel-wide" style="display: flex; flex-direction: column;">
-        <div class="panel-header" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
-            <h3 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
-                Transações do Período
-                <span class="tag" style="font-size: 11px; padding: 3px 8px; background: rgba(99, 102, 241, 0.1); color: var(--accent-primary);">
-                    {{ recent_transactions|length }} Registros
-                </span>
-            </h3>
-            <a href="{% url 'budget:transaction_list' %}" style="font-size: 13px; color: var(--accent-primary); font-weight: 500; display: flex; align-items: center; gap: 4px; text-decoration: none;">
-                Ver Todas (Busca Geral)
-                <i class='bx bx-link-external' style="font-size: 14px;"></i>
-            </a>
-        </div>
-        <div class="table-container" style="flex-grow: 1; overflow-y: auto; max-height: 480px; padding-right: 5px; margin-top: 15px;">
-            <table class="data-table">
-                <thead style="position: sticky; top: 0; background: var(--panel-bg); z-index: 1;">
-                    <tr>
-                        <th style="width: 100px;">Tipo</th>
-                        <th>Descrição</th>
-                        <th>Categoria</th>
-                        <th style="text-align: right;">Valor</th>
-                        <th style="text-align: center;">Data</th>
-                        <th style="text-align: center; width: 100px;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in recent_transactions %}
-                    <tr>
-                        <td>
-                            {% if item.transaction_type == 'income' %}
-                                <span class="tag" style="background: rgba(16, 185, 129, 0.1); color: var(--success); font-weight: 600; display: inline-block; width: 80px; text-align: center;">Receita</span>
-                            {% else %}
-                                <span class="tag" style="background: rgba(239, 110, 110, 0.1); color: var(--danger); font-weight: 600; display: inline-block; width: 80px; text-align: center;">Despesa</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span style="font-weight: 600; color: var(--text-primary);">{{ item.description }}</span>
-                            {% if item.is_credit %}
-                                <span class="tag" style="font-size: 10px; padding: 2px 6px; background: rgba(239, 68, 68, 0.1); color: #f87171; margin-left: 8px;">Crédito</span>
-                            {% endif %}
-                            {% if item.is_fixed_expense or item.is_fixed_income %}
-                                <span class="tag" style="font-size: 10px; padding: 2px 6px; background: rgba(99, 102, 241, 0.1); color: var(--accent-primary); margin-left: 4px;">Recorrente</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="tag" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);">{{ item.category.name }}</span>
-                        </td>
-                        <td style="text-align: right; font-weight: 600; color: {% if item.transaction_type == 'income' %}var(--success){% else %}var(--danger){% endif %}; white-space: nowrap;">
-                            {% if item.transaction_type == 'income' %}+{% else %}-{% endif %}R${{ item.value|floatformat:2|intcomma }}
-                        </td>
-                        <td style="text-align: center; color: var(--text-secondary); font-size: 13px;">
-                            {{ item.date|date:"d/m/Y" }}
-                        </td>
-                        <td style="text-align: center;">
-                            <button onclick="openEditModal(this)"
-                                    data-id="{{ item.id|stringformat:'s' }}"
-                                    data-description="{{ item.description }}"
-                                    data-value="{{ item.value|stringformat:'.2f' }}"
-                                    data-date="{{ item.date|date:'Y-m-d' }}"
-                                    data-type="{{ item.transaction_type }}"
-                                    data-category="{{ item.category.id|stringformat:'s' }}"
-                                    data-credit="{{ item.is_credit }}"
-                                    data-fixed-expense="{{ item.is_fixed_expense }}"
-                                    data-fixed-income="{{ item.is_fixed_income }}"
-                                    class="btn-secondary"
-                                    style="padding: 4px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border); font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: var(--text-primary); transition: all 0.2s;">
-                                <i class='bx bx-edit-alt' style="font-size: 14px; color: var(--accent-primary);"></i>
-                                Editar
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
-                            Nenhuma transação lançada no período selecionado.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="table-container budget-table-scroll">
+        <table class="data-table" id="budgetTransactionsTable">
+            <thead>
+                <tr>
+                    <th style="width: 110px;">Tipo</th>
+                    <th>Descrição & Marcadores</th>
+                    <th>Categoria</th>
+                    <th style="text-align: center;">Data</th>
+                    <th style="text-align: right;">Valor</th>
+                    <th style="text-align: center; width: 100px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recent_transactions %}
+                <tr data-tx-type="{{ item.transaction_type }}"
+                    data-tx-credit="{{ item.is_credit|yesno:'true,false' }}"
+                    data-tx-fixed="{% if item.is_fixed_expense or item.is_fixed_income %}true{% else %}false{% endif %}"
+                    data-tx-search="{{ item.description|lower }} {{ item.category.name|lower }}">
+                    <td>
+                        {% if item.transaction_type == 'income' %}
+                            <span class="tag" style="background: var(--success-bg); color: var(--accent-primary); display: inline-block; width: 88px; text-align: center;">Receita</span>
+                        {% else %}
+                            <span class="tag" style="background: var(--danger-bg); color: var(--coral); display: inline-block; width: 88px; text-align: center;">Despesa</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 600; color: var(--text-white);">{{ item.description }}</span>
+                        {% if item.is_credit %}
+                            <span class="tag" style="font-size: 10.5px; padding: 2px 7px; background: var(--warning-bg); color: var(--warning); margin-left: 8px;">Crédito</span>
+                        {% endif %}
+                        {% if item.is_fixed_expense or item.is_fixed_income %}
+                            <span class="tag" style="font-size: 10.5px; padding: 2px 7px; background: var(--info-bg); color: var(--info); margin-left: 4px;">Fixo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="tag">{{ item.category.name }}</span>
+                    </td>
+                    <td class="font-mono" style="text-align: center; color: var(--text-secondary); font-size: 12.5px;">
+                        {{ item.date|date:"d/m/Y" }}
+                    </td>
+                    <td class="font-mono" style="text-align: right; font-weight: 700; color: {% if item.transaction_type == 'income' %}var(--accent-primary){% else %}var(--coral){% endif %}; white-space: nowrap;">
+                        {% if item.transaction_type == 'income' %}+{% else %}-{% endif %} R$ {{ item.value|floatformat:2 }}
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button"
+                                onclick="openEditModal(this)"
+                                data-id="{{ item.id|stringformat:'s' }}"
+                                data-description="{{ item.description }}"
+                                data-value="{{ item.value|stringformat:'.2f' }}"
+                                data-date="{{ item.date|date:'Y-m-d' }}"
+                                data-type="{{ item.transaction_type }}"
+                                data-category="{{ item.category.id|stringformat:'s' }}"
+                                data-credit="{{ item.is_credit }}"
+                                data-fixed-expense="{{ item.is_fixed_expense }}"
+                                data-fixed-income="{{ item.is_fixed_income }}"
+                                class="btn-secondary btn-sm">
+                            <i class="ri-edit-line text-success"></i> Editar
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        Nenhuma transação lançada no período selecionado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -213,8 +308,8 @@
 <div id="transactionModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 class="modal-title">Nova Transação</h3>
-            <button onclick="closeModal('transactionModal')" class="close-btn">&times;</button>
+            <h3 class="modal-title"><i class="ri-add-circle-line text-success"></i> Nova Transação</h3>
+            <button type="button" onclick="closeModal('transactionModal')" class="close-btn">&times;</button>
         </div>
         <form method="POST" action="{% url 'budget:create_transaction' %}">
             {% csrf_token %}
@@ -222,17 +317,17 @@
 
             <div class="form-group">
                 <label for="description">Descrição *</label>
-                <input type="text" id="description" name="description" class="form-control" placeholder="Ex: Mercado Semanal, Salário..." required>
+                <input type="text" id="description" name="description" class="form-control" placeholder="Ex: Supermercado, Consultoria..." required>
             </div>
 
             <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div>
                     <label for="value">Valor (R$) *</label>
-                    <input type="text" id="value" name="value" class="form-control" placeholder="150,00" required>
+                    <input type="text" id="value" name="value" class="form-control font-mono" placeholder="150,00" required>
                 </div>
                 <div>
                     <label for="date">Data *</label>
-                    <input type="date" id="date" name="date" class="form-control" value="{% now 'Y-m-d' %}" required>
+                    <input type="date" id="date" name="date" class="form-control font-mono" value="{% now 'Y-m-d' %}" required>
                 </div>
             </div>
 
@@ -261,12 +356,12 @@
 
             <div class="form-group checkbox-group" id="fixed-expense-container">
                 <input type="checkbox" id="is_fixed_expense" name="is_fixed_expense">
-                <label for="is_fixed_expense" style="display: inline; margin: 0;">Despesa Fixa/Recorrente?</label>
+                <label for="is_fixed_expense" style="display: inline; margin: 0;">Despesa Fixa / Recorrente?</label>
             </div>
 
             <div class="form-group checkbox-group" id="fixed-income-container" style="display: none;">
                 <input type="checkbox" id="is_fixed_income" name="is_fixed_income">
-                <label for="is_fixed_income" style="display: inline; margin: 0;">Receita Fixa/Recorrente?</label>
+                <label for="is_fixed_income" style="display: inline; margin: 0;">Receita Fixa / Recorrente?</label>
             </div>
 
             <div class="form-actions">
@@ -281,8 +376,8 @@
 <div id="editTransactionModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 class="modal-title">Editar Transação</h3>
-            <button onclick="closeModal('editTransactionModal')" class="close-btn">&times;</button>
+            <h3 class="modal-title"><i class="ri-edit-line text-success"></i> Editar Transação</h3>
+            <button type="button" onclick="closeModal('editTransactionModal')" class="close-btn">&times;</button>
         </div>
         <form id="editForm" method="POST" action="">
             {% csrf_token %}
@@ -296,11 +391,11 @@
             <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div>
                     <label for="edit_value">Valor (R$) *</label>
-                    <input type="text" id="edit_value" name="value" class="form-control" required>
+                    <input type="text" id="edit_value" name="value" class="form-control font-mono" required>
                 </div>
                 <div>
                     <label for="edit_date">Data *</label>
-                    <input type="date" id="edit_date" name="date" class="form-control" required>
+                    <input type="date" id="edit_date" name="date" class="form-control font-mono" required>
                 </div>
             </div>
 
@@ -329,12 +424,12 @@
 
             <div class="form-group checkbox-group" id="edit-fixed-expense-container">
                 <input type="checkbox" id="edit_is_fixed_expense" name="is_fixed_expense">
-                <label for="edit_is_fixed_expense" style="display: inline; margin: 0;">Despesa Fixa/Recorrente?</label>
+                <label for="edit_is_fixed_expense" style="display: inline; margin: 0;">Despesa Fixa / Recorrente?</label>
             </div>
 
             <div class="form-group checkbox-group" id="edit-fixed-income-container" style="display: none;">
                 <input type="checkbox" id="edit_is_fixed_income" name="is_fixed_income">
-                <label for="edit_is_fixed_income" style="display: inline; margin: 0;">Receita Fixa/Recorrente?</label>
+                <label for="edit_is_fixed_income" style="display: inline; margin: 0;">Receita Fixa / Recorrente?</label>
             </div>
 
             <div class="form-actions">
@@ -349,14 +444,14 @@
 <div id="categoryModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 class="modal-title">Nova Categoria</h3>
-            <button onclick="closeModal('categoryModal')" class="close-btn">&times;</button>
+            <h3 class="modal-title"><i class="ri-folder-add-line text-success"></i> Nova Categoria</h3>
+            <button type="button" onclick="closeModal('categoryModal')" class="close-btn">&times;</button>
         </div>
         <form method="POST" action="{% url 'budget:create_category' %}">
             {% csrf_token %}
             <div class="form-group">
                 <label for="cat_name">Nome da Categoria *</label>
-                <input type="text" id="cat_name" name="name" class="form-control" placeholder="Ex: Lazer, Saúde, Aluguel..." required>
+                <input type="text" id="cat_name" name="name" class="form-control" placeholder="Ex: Lazer, Saúde, Moradia..." required>
             </div>
 
             <div class="form-group">
@@ -373,16 +468,15 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<!-- Passa dados dinâmicos do Django para o JS externo -->
+{% block extra_js %}
 <script>
     const categoryLabels = {{ category_labels|safe }};
     const categoryValues = {{ category_values|safe }};
     const evolutionLabels = {{ evolution_labels|safe }};
     const evolutionIncome = {{ evolution_income|safe }};
     const evolutionExpense = {{ evolution_expense|safe }};
+    const evolutionNet = {{ evolution_net|safe }};
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'js/budget.js' %}"></script>
-<script src="{% static 'js/budget_dashboard.js' %}"></script>
+<script src="{% static 'js/budget.js' %}?v=20261028c"></script>
+<script src="{% static 'js/budget_dashboard.js' %}?v=20261028c"></script>
 {% endblock %}

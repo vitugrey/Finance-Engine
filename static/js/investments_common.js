@@ -1,25 +1,18 @@
 // ==========================================================================
-// FUNÇÕES REUTILIZÁVEIS E COMUNS - INVESTIMENTOS
+// FUNÇÕES REUTILIZÁVEIS E COMUNS - INVESTIMENTOS GREYWORKS
 // ==========================================================================
 
-// Alternância de Abas (Tabs)
 function openTab(evt, tabId) {
     var i, tabcontent, tablinks;
-    
-    // Ocultar todos os conteúdos de abas
     tabcontent = document.getElementsByClassName("tab-content");
     for (i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
         tabcontent[i].classList.remove("active");
     }
-    
-    // Desativar botões de abas
     tablinks = document.getElementsByClassName("tab-btn");
     for (i = 0; i < tablinks.length; i++) {
         tablinks[i].classList.remove("active");
     }
-    
-    // Ativar aba atual
     const activeTab = document.getElementById(tabId);
     if (activeTab) {
         activeTab.style.display = "block";
@@ -30,9 +23,17 @@ function openTab(evt, tabId) {
     }
 }
 
-// Botão para Atualização de Cotações Yahoo Finance
 document.addEventListener("DOMContentLoaded", function() {
     const btnUpdatePrices = document.getElementById('btnUpdatePrices');
+    const banner = document.getElementById('priceStatusBanner');
+
+    function showBanner(msg, isError) {
+        if (!banner) return;
+        banner.style.display = 'flex';
+        banner.className = isError ? 'alert alert-error' : 'alert alert-success';
+        banner.textContent = msg;
+    }
+
     if (btnUpdatePrices) {
         btnUpdatePrices.addEventListener('click', function() {
             const btn = this;
@@ -40,13 +41,12 @@ document.addEventListener("DOMContentLoaded", function() {
             const span = btn.querySelector('span');
             
             if (icon) icon.classList.add('bx-spin');
-            if (span) span.innerText = 'Buscando Cotações...';
+            if (span) span.textContent = 'Sincronizando Cotações...';
             btn.style.opacity = '0.7';
             btn.style.pointerEvents = 'none';
 
-            // Lê csrf token dinâmico passado no atributo do botão ou no window
             const csrfToken = typeof csrfTokenVal !== 'undefined' ? csrfTokenVal : '';
-            const updateUrl = typeof updatePricesUrl !== 'undefined' ? updatePricesUrl : '/investimentos/atualizar-cotacoes/';
+            const updateUrl = typeof updatePricesUrl !== 'undefined' ? updatePricesUrl : '/investimentos/api/update-prices/';
 
             fetch(updateUrl, {
                 method: 'POST',
@@ -57,16 +57,22 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    window.location.reload();
+                    showBanner('Cotações sincronizadas com sucesso! Recarregando...', false);
+                    setTimeout(() => window.location.reload(), 600);
                 } else {
-                    alert('Erro ao atualizar preços.');
-                    window.location.reload();
+                    showBanner('Não foi possível atualizar as cotações neste momento.', true);
+                    if (icon) icon.classList.remove('bx-spin');
+                    if (span) span.textContent = 'Atualizar Cotações (Yahoo Finance)';
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
                 }
             })
-            .catch(err => {
-                console.error(err);
-                alert('Erro de conexão.');
-                window.location.reload();
+            .catch(() => {
+                showBanner('Erro de comunicação ao consultar cotações.', true);
+                if (icon) icon.classList.remove('bx-spin');
+                if (span) span.textContent = 'Atualizar Cotações (Yahoo Finance)';
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
             });
         });
     }

@@ -1,68 +1,110 @@
 // ==========================================================================
-// GRÁFICOS DO DASHBOARD DE INVESTIMENTOS
+// GRÁFICOS E INTERATIVIDADE DE INVESTIMENTOS - GREYWORKS FINANCE
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", function() {
+    // 1. Gráfico de Rosca Concêntrico Duplo (Anel Externo: Meta Ideal | Anel Interno: Realidade da Carteira)
     const allocCanvas = document.getElementById('allocationChart');
-    if (allocCanvas && typeof allocationLabels !== 'undefined' && typeof allocationData !== 'undefined') {
+    if (allocCanvas && typeof strategicLabels !== 'undefined' && typeof strategicActualPcts !== 'undefined' && typeof strategicTargetPcts !== 'undefined') {
         const ctx = allocCanvas.getContext('2d');
-        
-        const colorMap = {
-            'Fundo Imobiliário': '#3b82f6', // Azul
-            'Ação': '#f59e0b', // Laranja
-            'Renda Fixa': '#10b981', // Verde
-            'ETF': '#ef4444', // Vermelho
-            'BDR': '#8b5cf6', // Roxo
-            'Criptomoeda': '#ec4899', // Rosa
-            'Outro': '#9ca3af' // Cinza
-        };
-        
-        const bgColors = allocationLabels.map(label => colorMap[label] || '#9ca3af');
-        
+
+        const baseColors = (typeof strategicColors !== 'undefined' && strategicColors.length)
+            ? strategicColors
+            : ['#F59E0B', '#3B82F6', '#00DC82', '#E2E8F0'];
+
+        // Anel Externo (Metas) com transparência + borda tracejada/destacada e Anel Interno (Realidade sólida)
+        const outerTargetColors = [
+            'rgba(245, 158, 11, 0.50)',
+            'rgba(59, 130, 246, 0.50)',
+            'rgba(0, 220, 130, 0.50)',
+            'rgba(226, 232, 240, 0.50)'
+        ];
+
+        const displayLabels = strategicLabels.map((lbl, i) => {
+            const act = strategicActualPcts[i] !== undefined ? Number(strategicActualPcts[i]).toFixed(1) : '0.0';
+            const tgt = strategicTargetPcts[i] !== undefined ? Number(strategicTargetPcts[i]).toFixed(0) : '0';
+            return `${lbl}: ${act}% (Meta ${tgt}%)`;
+        });
+
+        const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: allocationLabels,
-                datasets: [{
-                    data: allocationData,
-                    backgroundColor: bgColors,
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
+                labels: displayLabels,
+                datasets: [
+                    {
+                        label: 'Meta Estratégica (Anel Externo)',
+                        data: strategicTargetPcts,
+                        backgroundColor: outerTargetColors,
+                        hoverBackgroundColor: baseColors,
+                        borderColor: '#181C24',
+                        borderWidth: 3,
+                        weight: 0.9,
+                        hoverOffset: 4
+                    },
+                    {
+                        label: 'Realidade da Carteira (Anel Interno)',
+                        data: strategicActualPcts,
+                        backgroundColor: baseColors,
+                        hoverBackgroundColor: baseColors,
+                        borderColor: '#181C24',
+                        borderWidth: 3,
+                        weight: 1.3,
+                        hoverOffset: 6
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '75%',
+                cutout: '45%',
                 plugins: {
                     legend: {
                         position: 'right',
                         labels: {
-                            color: '#9ca3af',
+                            color: '#E2E8F0',
                             font: {
-                                family: "'Inter', sans-serif",
-                                size: 12
+                                family: "'JetBrains Mono', monospace",
+                                size: 11.5
                             },
                             usePointStyle: true,
-                            padding: 20
+                            boxWidth: 10,
+                            padding: 16
                         }
                     },
                     tooltip: {
-                        backgroundColor: '#1f2937',
-                        titleColor: '#f3f4f6',
-                        bodyColor: '#d1d5db',
-                        borderColor: '#374151',
+                        backgroundColor: '#141722',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#E2E8F0',
+                        borderColor: '#262B35',
                         borderWidth: 1,
                         padding: 12,
                         callbacks: {
+                            title: function(context) {
+                                if (!context || !context.length) return '';
+                                const item = context[0];
+                                const className = strategicLabels[item.dataIndex] || item.label;
+                                const ringName = item.datasetIndex === 0
+                                    ? 'Meta Ideal (Anel Externo)'
+                                    : 'Realidade da Carteira (Anel Interno)';
+                                return `${className} — ${ringName}`;
+                            },
                             label: function(context) {
-                                let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed !== null) {
-                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }).format(context.parsed).replace('R$', 'R$').replace(/\s/g, '');
-                                }
-                                return label;
+                                const idx = context.dataIndex;
+                                const isTargetRing = context.datasetIndex === 0;
+                                const pct = context.parsed !== null ? Number(context.parsed).toFixed(1) : '0.0';
+                                const finVal = isTargetRing
+                                    ? (typeof strategicTargetVals !== 'undefined' ? strategicTargetVals[idx] : 0)
+                                    : (typeof strategicActualVals !== 'undefined' ? strategicActualVals[idx] : 0);
+                                const otherPct = isTargetRing
+                                    ? Number(strategicActualPcts[idx] || 0).toFixed(1)
+                                    : Number(strategicTargetPcts[idx] || 0).toFixed(1);
+                                const otherLabel = isTargetRing ? 'Atual na Carteira' : 'Meta Definida';
+
+                                return [
+                                    ` Participação: ${pct}% (${formatBRL(finVal)})`,
+                                    ` Comparativo (${otherLabel}): ${otherPct}%`
+                                ];
                             }
                         }
                     }
@@ -71,31 +113,23 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // ==========================================================================
-    // GRÁFICO DE BARRAS EMPILHADAS (PROVENTOS MENSAIS POR ATIVO)
-    // ==========================================================================
+    // 2. Gráfico Empilhado de Proventos Mensais (12 Meses)
     const divMonthlyCanvas = document.getElementById('dividendsMonthlyChart');
     if (divMonthlyCanvas && typeof dividendsMonthlyLabels !== 'undefined' && typeof dividendsMonthlyDatasets !== 'undefined') {
         const ctx = divMonthlyCanvas.getContext('2d');
         
-        // Cores vibrantes e harmoniosas para os ativos
         const chartColors = [
-            '#6366f1', // Indigo
-            '#3b82f6', // Azul
-            '#10b981', // Verde
-            '#f59e0b', // Laranja
-            '#8b5cf6', // Roxo
-            '#ef4444', // Vermelho
-            '#ec4899', // Rosa
-            '#14b8a6', // Teal
-            '#f43f5e', // Rose
-            '#06b6d4', // Cyan
-            '#84cc16', // Lime
-            '#a855f7', // Purple
-            '#64748b'  // Slate
+            '#00DC82', // Signature Green
+            '#3B82F6', // Azul
+            '#F59E0B', // Âmbar
+            '#E2E8F0', // Prata
+            '#F87171', // Coral
+            '#10B981', // Emerald
+            '#60A5FA', // Sky
+            '#9CA3AF', // Cinza Metálico
+            '#64748B'  // Slate
         ];
 
-        // Mapeia e colore cada dataset
         const datasetsWithColors = dividendsMonthlyDatasets.map((dataset, idx) => {
             const color = chartColors[idx % chartColors.length];
             return {
@@ -121,9 +155,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     legend: {
                         position: 'top',
                         labels: {
-                            color: '#9ca3af',
+                            color: '#9CA3AF',
                             font: {
-                                family: "'Inter', sans-serif",
+                                family: "'JetBrains Mono', monospace",
                                 size: 11
                             },
                             usePointStyle: true,
@@ -132,10 +166,10 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                     },
                     tooltip: {
-                        backgroundColor: '#1f2937',
-                        titleColor: '#f3f4f6',
-                        bodyColor: '#d1d5db',
-                        borderColor: '#374151',
+                        backgroundColor: '#181C24',
+                        titleColor: '#FFFFFF',
+                        bodyColor: '#E2E8F0',
+                        borderColor: '#262B35',
                         borderWidth: 1,
                         padding: 12,
                         callbacks: {
@@ -156,13 +190,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     x: {
                         stacked: true,
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.05)',
+                            color: '#1E2330',
                             borderColor: 'transparent'
                         },
                         ticks: {
-                            color: '#9ca3af',
+                            color: '#64748B',
                             font: {
-                                family: "'Inter', sans-serif",
+                                family: "'JetBrains Mono', monospace",
                                 size: 11
                             }
                         }
@@ -170,13 +204,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     y: {
                         stacked: true,
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.05)',
+                            color: '#1E2330',
                             borderColor: 'transparent'
                         },
                         ticks: {
-                            color: '#9ca3af',
+                            color: '#64748B',
                             font: {
-                                family: "'Inter', sans-serif",
+                                family: "'JetBrains Mono', monospace",
                                 size: 11
                             },
                             callback: function(value) {
@@ -186,6 +220,68 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
             }
+        });
+    }
+
+    // 3. Filtro Instantâneo por Classe na Tabela de Posições
+    const filterContainer = document.getElementById('assetFilterPills');
+    const positionsTable = document.getElementById('portfolioPositionsTable');
+    if (filterContainer && positionsTable) {
+        const pills = filterContainer.querySelectorAll('.inv-pill');
+        const rows = positionsTable.querySelectorAll('tbody tr[data-asset-type]');
+
+        pills.forEach(pill => {
+            pill.addEventListener('click', function() {
+                pills.forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+
+                const filterVal = this.getAttribute('data-filter');
+                rows.forEach(row => {
+                    const rowType = row.getAttribute('data-asset-type');
+                    if (filterVal === 'all' || rowType === filterVal) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    // 4. Sincronização de Cotações Yahoo Finance (Sem alert())
+    const syncBtn = document.getElementById('btnSyncYFinance');
+    const syncText = document.getElementById('syncText');
+    const syncBanner = document.getElementById('syncStatusBanner');
+    const syncMsg = document.getElementById('syncStatusMsg');
+
+    if (syncBtn) {
+        syncBtn.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            const csrf = this.getAttribute('data-csrf');
+            if (!url) return;
+
+            syncBtn.disabled = true;
+            if (syncText) syncText.textContent = 'Sincronizando B3...';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (syncBanner && syncMsg) {
+                    syncBanner.style.display = 'flex';
+                    syncMsg.textContent = 'Cotações B3 sincronizadas (' + (data.updated || 0) + ' ativos atualizados). Recarregando painel...';
+                }
+                setTimeout(() => window.location.reload(), 900);
+            })
+            .catch(() => {
+                syncBtn.disabled = false;
+                if (syncText) syncText.textContent = 'Atualizar Cotações';
+            });
         });
     }
 });

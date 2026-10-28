@@ -1,12 +1,11 @@
-import os
 from datetime import date, timedelta
 from decimal import Decimal
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.db.models import Sum
 
-from investments.models import Asset, Dividend, Transaction as InvestTransaction
-from budget.models import Transaction as BudgetTransaction
+from investments.models import Asset, Dividend
+from budget.models import FinancialSettings, Transaction as BudgetTransaction
 
 
 def _to_float(val) -> float:
@@ -21,8 +20,8 @@ def api_status(request):
     """Retorna o status da API financeira e mapa de rotas disponíveis."""
     return JsonResponse({
         "status": "online",
-        "service": "KaLLia-Finance API",
-        "version": "1.0.0",
+        "service": "GreyWorks Finance API",
+        "version": "2.0.0",
         "endpoints": {
             "resumo": "/api/resumo/",
             "investimentos": "/api/investimentos/",
@@ -40,8 +39,8 @@ def api_summary(request):
     Patrimônio investido, receitas do mês, despesas do mês, saldo e taxa de poupança.
     """
     today = date.today()
+    config = FinancialSettings.get_solo()
 
-    # 1. Investimentos (Patrimônio Total)
     assets = Asset.objects.filter(is_active=True)
     total_patrimony = Decimal('0')
     total_invested = Decimal('0')
@@ -54,7 +53,6 @@ def api_summary(request):
             total_patrimony += qty * preco_atual
             total_invested += qty * pm
 
-    # 2. Fluxo de Caixa do Mês Atual
     month_income = BudgetTransaction.objects.filter(
         transaction_type='income',
         date__year=today.year,
@@ -70,7 +68,6 @@ def api_summary(request):
     month_balance = month_income - month_expense
     total_consolidated = total_patrimony + month_balance
 
-    # Taxa de poupança do mês
     savings_pct = Decimal('0')
     if month_income > 0 and month_balance > 0:
         savings_pct = ((month_balance / month_income) * Decimal('100')).quantize(Decimal('0.1'))
@@ -85,6 +82,7 @@ def api_summary(request):
     }
 
     return JsonResponse({
+        "perfil": config.profile_name,
         "mes_referencia": f"{months_pt.get(today.month, '')}/{today.year}",
         "patrimonio_investido": _to_float(total_patrimony),
         "total_investido": _to_float(total_invested),
@@ -101,7 +99,7 @@ def api_summary(request):
 @require_GET
 def api_investments(request):
     """
-    Retorna a composição da carteira, alocação por classe (metodologia ARCA)
+    Retorna a composição da carteira, alocação por classe
     e lista detalhada dos ativos em carteira.
     """
     assets = Asset.objects.filter(is_active=True).order_by('asset_type', 'ticker', 'name')
@@ -142,7 +140,6 @@ def api_investments(request):
                 "rentabilidade_perc": _to_float((rentabilidade / aportado * 100) if aportado > 0 else 0),
             })
 
-    # Alocação por classe
     alocacao = []
     for t_name, t_val in patrimony_by_type.items():
         perc = (t_val / total_patrimony * 100) if total_patrimony > 0 else Decimal('0')
@@ -178,10 +175,6 @@ def api_investments(request):
 
 @require_GET
 def api_dividends(request):
-    """
-    Retorna estatísticas de proventos e dividendos recebidos:
-    Mês atual, ano atual, acumulado últimos 12 meses e média mensal.
-    """
     today = date.today()
     cutoff_12m = today - timedelta(days=365)
 
@@ -199,10 +192,8 @@ def api_dividends(request):
     ).aggregate(total=Sum('total_value'))['total'] or Decimal('0')
 
     all_time_divs = Dividend.objects.aggregate(total=Sum('total_value'))['total'] or Decimal('0')
-
     media_mensal_12m = (ttm_divs / 12) if ttm_divs > 0 else Decimal('0')
 
-    # Top ativos que mais pagaram proventos nos últimos 12 meses
     top_payers = []
     assets = Asset.objects.filter(is_active=True)
     for a in assets:
@@ -229,12 +220,7 @@ def api_dividends(request):
 
 @require_GET
 def api_budget(request):
-    """
-    Retorna o detalhamento do fluxo de caixa e orçamento do mês:
-    Receitas, despesas, despesas fixas recorrentes, compras no cartão e gastos por categoria.
-    """
     today = date.today()
-
     transactions = BudgetTransaction.objects.filter(
         date__year=today.year,
         date__month=today.month
@@ -245,7 +231,6 @@ def api_budget(request):
     fixed_expense = transactions.filter(transaction_type='expense', is_fixed_expense=True).aggregate(total=Sum('value'))['total'] or Decimal('0')
     credit_expense = transactions.filter(transaction_type='expense', is_credit=True).aggregate(total=Sum('value'))['total'] or Decimal('0')
 
-    # Gastos por categoria
     expenses_by_cat = transactions.filter(transaction_type='expense').values('category__name').annotate(total=Sum('value')).order_by('-total')
 
     categorias = [
@@ -273,10 +258,7 @@ def api_budget(request):
 
 @require_GET
 def api_goals(request):
-    """
-    Retorna o progresso das metas financeiras (R$ 50k, 100k, 1M)
-    com base no patrimônio acumulado atual.
-    """
+    config = FinancialSettings.get_solo()
     assets = Asset.objects.filter(is_active=True)
     total_patrimony = Decimal('0')
     for a in assets:
@@ -286,9 +268,9 @@ def api_goals(request):
             total_patrimony += qty * preco
 
     marcos_valores = [
-        ("R$ 50.000 (Primeiro Marco)", Decimal('50000')),
-        ("R$ 100.000 (Mundo dos 6 dígitos)", Decimal('100000')),
-        ("R$ 1.000.000 (Independência Financeira)", Decimal('1000000')),
+        ("Reserva de Liquidez", config.emergency_fund_target),
+        ("Meta Principal Configurada", config.patrimony_target),
+        ("Independência Financeira (R$ 1M)", Decimal('1000000')),
     ]
 
     metas = []

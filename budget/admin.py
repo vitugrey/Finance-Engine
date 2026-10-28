@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Transaction
+from .models import Category, ChecklistItem, FinancialSettings, Transaction
 
 
 @admin.register(Category)
@@ -25,3 +25,20 @@ class TransactionAdmin(admin.ModelAdmin):
     search_fields = ("description",)
     date_hierarchy = "date"
     ordering = ("-date",)
+
+
+@admin.register(FinancialSettings)
+class FinancialSettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile_name",
+        "patrimony_target",
+        "contribution_target",
+        "emergency_fund_target",
+        "updated_at",
+    )
+
+
+@admin.register(ChecklistItem)
+class ChecklistItemAdmin(admin.ModelAdmin):
+    list_display = ("day_of_month", "title", "category_tag", "is_completed", "order")
+    list_filter = ("category_tag", "is_completed")

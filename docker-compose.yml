@@ -1,12 +1,10 @@
 services:
-  web:
+  finance:
     build: .
-    container_name: kallia-finance
-    restart: always
+    container_name: greyworks-finance
     ports:
       - "7777:7777"
-    volumes:
-      - .:/app
-      - ../databases:/databases
     environment:
-      - PYTHONUNBUFFERED=1
+      - PORT=0.0.0.0:7777
+    volumes:
+      - ./databases:/app/databases

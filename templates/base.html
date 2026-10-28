@@ -4,28 +4,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Kallia Finanças{% endblock %}</title>
+    <title>{% block title %}GreyWorks Finance{% endblock %}</title>
     
-    <!-- Boxicons for icons -->
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Favicon Oficial VG (GreyWorks) -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+
+    <!-- Tipografia Oficial GreyWorks: Space Grotesk, Inter, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Boxicons & RemixIcon -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- Design System GreyWorks -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261028e">
     
     {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-icon">K</div>
-            <div class="brand-name">Kallia</div>
-        </div>
+        <a href="{% url 'overview' %}" class="brand">
+            <div class="brand-icon" aria-label="Logo GreyWorks VG">
+                <svg viewBox="0 0 40 40" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="gwLogoGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#1B1E26"/>
+                            <stop offset="100%" stop-color="#0E1015"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="1" y="1" width="38" height="38" rx="9" fill="url(#gwLogoGrad)" stroke="#262B35" stroke-width="1.5"/>
+                    <path d="M7.5 12H11.5L15.5 24.5L23.5 12H32.5L30.2 15.5H25.2L17.2 28H13.8L7.5 12Z" fill="#FFFFFF"/>
+                    <path d="M23.5 18.5H32.5V28H21.2L23.4 24.6H28.8V21.8H21.4L23.5 18.5Z" fill="#FFFFFF"/>
+                </svg>
+            </div>
+            <div class="brand-text-wrap">
+                <div class="brand-wordmark">
+                    <span class="brand-grey">Finance</span><span class="brand-works">&nbsp;Engine</span>
+                </div>
+                <span class="brand-product-badge">BY GREYWORKS</span>
+            </div>
+        </a>
         
         <ul class="nav-menu">
             <a href="{% url 'overview' %}" class="nav-item {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">
-                <i class='bx bx-home-alt'></i>
+                <i class='bx bx-grid-alt'></i>
                 <span>Visão Geral</span>
             </a>
             <a href="{% url 'investments:dashboard' %}" class="nav-item {% if request.resolver_match.app_name == 'investments' %}active{% endif %}">
@@ -38,33 +65,47 @@
             </a>
             <a href="{% url 'goals' %}" class="nav-item {% if request.resolver_match.url_name == 'goals' %}active{% endif %}">
                 <i class='bx bx-target-lock'></i>
-                <span>Metas</span>
+                <span>Metas & Simulador</span>
             </a>
-            <a href="#" class="nav-item">
-                <i class='bx bx-cog'></i>
+            <a href="{% url 'settings' %}" class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                <i class='bx bx-slider-alt'></i>
                 <span>Configurações</span>
             </a>
         </ul>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-demo-card">
+                <div class="demo-status-row">
+                    <span class="status-dot"></span>
+                    <span class="status-label">DEMO INTERATIVA</span>
+                </div>
+                <p class="demo-desc">Personalize metas, simule cenários ou teste lançamentos em tempo real.</p>
+                <a href="{% url 'settings' %}" class="demo-config-link">
+                    <i class='bx bx-cog'></i> Personalizar Demo
+                </a>
+            </div>
+        </div>
     </aside>
 
     <!-- Main Content -->
     <main class="main-content">
         <div class="header">
             <div>
-                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                <p class="page-subtitle">{% block page_subtitle %}Gerencie seu patrimônio e finanças{% endblock %}</p>
+                <h1 class="page-title">{% block page_title %}{% block header_title %}Dashboard{% endblock %}{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}{% block header_subtitle %}Consolidação patrimonial e engenharia financeira{% endblock %}{% endblock %}</p>
             </div>
             
-            <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+            <div class="header-actions">
                 {% block header_actions %}{% endblock %}
             </div>
         </div>
         
         {% if messages %}
-            <div class="messages-container" style="margin-bottom: 24px;">
+            <div class="messages-container">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}" style="padding: 16px; border-radius: 12px; font-weight: 500; {% if message.tags == 'success' %}background: var(--success-bg); color: var(--success); border-left: 4px solid var(--success);{% else %}background: var(--danger-bg); color: var(--danger); border-left: 4px solid var(--danger);{% endif %}">
-                    {{ message }}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class='bx {% if message.tags == "success" %}bx-check-circle{% else %}bx-error-circle{% endif %}'></i>
+                    <span>{{ message }}</span>
                 </div>
             {% endfor %}
             </div>
@@ -74,6 +115,8 @@
         {% endblock %}
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% block extra_scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,117 +1,235 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% load static %}
+{% load l10n %}
 
-{% block title %}Investimentos | Kallia{% endblock %}
-{% block page_title %}Carteira de Investimentos{% endblock %}
-{% block page_subtitle %}Visão geral do seu portfólio na B3{% endblock %}
+{% block title %}GreyWorks Finance - Portfólio de Investimentos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/investments.css' %}?v=20261028c">
+{% endblock %}
+
+{% block header_title %}Portfólio de Investimentos{% endblock %}
+{% block header_subtitle %}Consolidação de custódia, rentabilidade real, dividend yield e exposição por classe{% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'investments:manual_investments' %}" class="btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; font-weight: 500; font-size: 14px; text-decoration: none; transition: all 0.2s;">
-    <i class='bx bx-plus' style="font-size: 18px;"></i>
-    Lançamento Manual
+<button type="button" id="btnSyncYFinance" class="btn-secondary" data-url="{% url 'investments:update_prices' %}" data-csrf="{{ csrf_token }}">
+    <i class="ri-refresh-line" id="syncIcon"></i>
+    <span id="syncText">Atualizar Cotações</span>
+</button>
+<a href="{% url 'investments:manual_investments' %}" class="btn-outline-green">
+    <i class="ri-add-circle-line"></i> Lançamento Manual
 </a>
-<a href="{% url 'investments:import_report' %}" class="btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: rgba(99, 102, 241, 0.15); color: var(--accent-primary); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; font-weight: 500; font-size: 14px; text-decoration: none; transition: all 0.2s;">
-    <i class='bx bx-cloud-upload' style="font-size: 18px;"></i>
-    Importar B3
+<a href="{% url 'investments:import_report' %}" class="btn-primary">
+    <i class="ri-upload-cloud-2-line"></i> Importar B3
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-grid">
-    <!-- Top 3 Cards -->
-    <a href="{% url 'investments:patrimony_charts' %}" class="panel kpi-card" style="text-decoration: none; display: flex; flex-direction: column;">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-blue">
-                <i class='bx bx-wallet-alt'></i>
-            </div>
-            <span>Total de Patrimônio (Atual)</span>
-        </div>
-        <div class="kpi-value" style="color: var(--text-primary);">R${{ total_patrimony|floatformat:2|intcomma }}</div>
-        <div class="kpi-trend trend-up" style="background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 500; padding: 0;">
-            Aportado (Custo): R${{ total_invested|floatformat:2|intcomma }}
-        </div>
-    </a>
+<!-- Banner de Feedback de Sincronização (Sem alert() nativo) -->
+<div id="syncStatusBanner" class="alert alert-success" style="display: none; margin-bottom: 20px;">
+    <i class="ri-checkbox-circle-line"></i>
+    <span id="syncStatusMsg">Cotações sincronizadas com sucesso!</span>
+</div>
 
-    <a href="{% url 'investments:dividends_charts' %}" class="panel kpi-card" style="text-decoration: none; display: flex; flex-direction: column;">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-green">
-                <i class='bx bx-dollar-circle'></i>
+<!-- 1. LINHA DE 4 KPIs EXECUTIVOS DO PORTFÓLIO -->
+<div class="goals-kpi-grid">
+    <!-- KPI 1: Patrimônio Investido -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-green"><i class="ri-briefcase-4-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Patrimônio em Ativos</span>
+                <span class="goal-kpi-pct font-mono">{{ patrimony_progress|floatformat:1 }}% da Meta</span>
             </div>
-            <span>Dividendos (Último Mês)</span>
         </div>
-        <div class="kpi-value" style="color: var(--text-primary);">R${{ last_month_divs|floatformat:2|intcomma }}</div>
-        <div class="kpi-trend trend-up">
-            <i class='bx bx-line-chart'></i> Yield (Últimos 12m): {{ dividend_yield_ttm|floatformat:2 }}%
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ total_patrimony|floatformat:2 }}</span>
+            <span class="target-val">Custo R$ {{ total_invested|floatformat:0 }}</span>
         </div>
-    </a>
-
-    <div class="panel kpi-card">
-        <div class="kpi-header">
-            <div class="kpi-icon {% if total_rentabilidade >= 0 %}icon-purple{% else %}icon-red{% endif %}">
-                <i class='bx bx-trending-up'></i>
-            </div>
-            <span>Rentabilidade</span>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-green" style="width: {{ patrimony_progress|unlocalize }}%;"></div>
         </div>
-        <div class="kpi-value" style="color: {% if total_rentabilidade >= 0 %}var(--success){% else %}var(--danger){% endif %};">
-            R${{ total_rentabilidade|floatformat:2|intcomma }}
-        </div>
-        <div class="kpi-trend {% if total_rentabilidade >= 0 %}trend-up{% else %}trend-down{% endif %}">
-            <i class='bx {% if total_rentabilidade >= 0 %}bx-up-arrow-alt{% else %}bx-down-arrow-alt{% endif %}'></i> {{ total_rentabilidade_perc|floatformat:2 }}%
+        <div class="goal-kpi-foot" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ portfolio_count }} ativos em custódia</span>
+            <a href="{% url 'investments:patrimony_charts' %}" class="inv-kpi-link">Evolução &rarr;</a>
         </div>
     </div>
 
-    <!-- Bottom 2 Panels -->
-    <!-- Grafico de Pizza -->
-    <div class="panel panel-half">
-        <div class="panel-header">
-            <h3 class="panel-title">Composição da Carteira</h3>
+    <!-- KPI 2: Retorno Total (Valorização + Proventos) -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-blue"><i class="ri-line-chart-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Retorno Total (c/ Divs)</span>
+                <span class="goal-kpi-pct font-mono {% if total_return_with_divs >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if total_return_with_divs >= 0 %}+{% endif %}{{ total_return_with_divs_perc|floatformat:2 }}%
+                </span>
+            </div>
         </div>
-        <div style="height: 300px; position: relative;">
+        <div class="goal-kpi-numbers">
+            <span class="current-val {% if total_return_with_divs >= 0 %}text-success{% else %}text-danger{% endif %}">
+                R$ {{ total_return_with_divs|floatformat:2 }}
+            </span>
+            <span class="target-val">lucro global</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-blue" style="width: 100%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Capital: <strong class="text-white">R$ {{ total_rentabilidade|floatformat:0 }}</strong> ({{ total_rentabilidade_perc|floatformat:1 }}%) · Divs: <strong class="text-success">R$ {{ total_dividends|floatformat:0 }}</strong>
+        </div>
+    </div>
+
+    <!-- KPI 3: Renda Passiva & Yield 12m -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-amber"><i class="ri-coins-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Renda Passiva (12m)</span>
+                <span class="goal-kpi-pct font-mono">DY {{ dividend_yield_ttm|floatformat:2 }}%</span>
+            </div>
+        </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ avg_monthly_divs|floatformat:2 }}</span>
+            <span class="target-val">/mês (YoC {{ yield_on_cost_ttm|floatformat:1 }}%)</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-amber" style="width: {{ passive_progress|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Último mês: <strong class="text-white">R$ {{ last_month_divs|floatformat:2 }}</strong></span>
+            <a href="{% url 'investments:dividends_charts' %}" class="inv-kpi-link">Histórico &rarr;</a>
+        </div>
+    </div>
+
+    <!-- KPI 4: Equilíbrio Renda Fixa vs Renda Variável -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-purple"><i class="ri-scales-2-line"></i></div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Perfil de Exposição</span>
+                <span class="goal-kpi-pct font-mono">{{ fixed_income_pct|floatformat:0 }}% RF / {{ variable_income_pct|floatformat:0 }}% RV</span>
+            </div>
+        </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R$ {{ variable_income_val|floatformat:2 }}</span>
+            <span class="target-val">em Renda Variável</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-green" style="width: {{ fixed_income_pct|unlocalize }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            Liquidez / RF: <strong class="text-success">R$ {{ fixed_income_val|floatformat:2 }}</strong> ({{ fixed_income_pct|floatformat:1 }}%)
+        </div>
+    </div>
+</div>
+
+<!-- 2. GRID PRINCIPAL: COMPOSIÇÃO DE CLASSES (5 COLS) + TABELA ANALÍTICA DE POSIÇÕES (7 COLS) -->
+<div class="inv-main-grid">
+    <!-- Coluna Esquerda: Gráfico Concêntrico Duplo (Meta vs Realidade) -->
+    <div class="panel inv-col-alloc">
+        <div class="panel-header" style="margin-bottom: 12px;">
+            <div>
+                <h2 class="panel-title"><i class="ri-donut-chart-line text-success"></i> Alocação por Classe</h2>
+                <p class="panel-desc">Comparativo visual entre Meta Estratégica e Realidade da Carteira</p>
+            </div>
+            <a href="{% url 'goals' %}" class="btn-secondary btn-sm">Rebalancear</a>
+        </div>
+
+        <div class="inv-ring-badges">
+            <div class="inv-ring-badge">
+                <span class="ring-indicator ring-outer"></span>
+                <span><strong>Anel Externo:</strong> Meta Ideal (%)</span>
+            </div>
+            <div class="inv-ring-badge">
+                <span class="ring-indicator ring-inner"></span>
+                <span><strong>Anel Interno:</strong> Realidade da Carteira (%)</span>
+            </div>
+        </div>
+
+        <div class="inv-doughnut-wrap">
             <canvas id="allocationChart"></canvas>
         </div>
     </div>
 
-    <!-- Lista de Ativos com Scroll -->
-    <div class="panel panel-half" style="display: flex; flex-direction: column;">
-        <div class="panel-header" style="flex-shrink: 0;">
-            <a href="{% url 'investments:asset_list' %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;" class="panel-title">
-                Ativos na Carteira
-                <i class='bx bx-link-external' style="color: var(--accent-primary); font-size: 16px;"></i>
+    <!-- Coluna Direita: Tabela Completa de Posições com Filtro Rápido -->
+    <div class="panel inv-col-positions">
+        <div class="panel-header inv-positions-header">
+            <div>
+                <h2 class="panel-title"><i class="ri-equalizer-line text-success"></i> Posições Consolidadas em Carteira</h2>
+                <p class="panel-desc">Acompanhamento de preço médio, participação, yield e resultado por ativo</p>
+            </div>
+            <a href="{% url 'investments:asset_list' %}" class="btn-outline-green btn-sm">
+                Raio-X por Classe <i class="ri-arrow-right-up-line"></i>
             </a>
         </div>
-        <div class="table-container" style="flex-grow: 1; overflow-y: auto; max-height: 300px; padding-right: 5px;">
-            <table class="data-table">
-                <thead style="position: sticky; top: 0; background: var(--panel-bg); z-index: 1;">
+
+        <!-- Filtros Rápidos por Tipo de Ativo -->
+        <div class="inv-filter-pills" id="assetFilterPills">
+            <button type="button" class="inv-pill active" data-filter="all">Todos ({{ portfolio_count }})</button>
+            <button type="button" class="inv-pill" data-filter="Ação">Ações</button>
+            <button type="button" class="inv-pill" data-filter="Fundo Imobiliário">FIIs</button>
+            <button type="button" class="inv-pill" data-filter="Renda Fixa">Renda Fixa</button>
+            <button type="button" class="inv-pill" data-filter="ETF">ETFs / Global</button>
+        </div>
+
+        <div class="table-container inv-positions-table-wrap">
+            <table class="data-table" id="portfolioPositionsTable">
+                <thead>
                     <tr>
                         <th>Ativo</th>
+                        <th style="text-align: right;">Cotação / PM</th>
+                        <th style="text-align: right;">Peso %</th>
+                        <th style="text-align: right;">DY (12m)</th>
                         <th style="text-align: right;">Patrimônio</th>
-                        <th style="text-align: right;">Rentabilidade</th>
+                        <th style="text-align: right;">Resultado</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in portfolio %}
-                    <tr>
+                    <tr data-asset-type="{{ item.type }}">
                         <td>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="asset-icon" style="width: 32px; height: 32px; font-size: 12px;">{{ item.ticker|slice:":2" }}</div>
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; color: var(--text-primary);">{{ item.ticker }}</span>
-                                    <span style="font-size: 11px; color: var(--text-secondary);">{{ item.type }}</span>
+                            <div class="asset-cell">
+                                <div class="asset-icon">{{ item.ticker|slice:":4" }}</div>
+                                <div class="asset-info">
+                                    <span class="asset-ticker">{{ item.ticker }}</span>
+                                    <span class="asset-type">{{ item.type }} · {{ item.quantity|floatformat:0 }} un.</span>
                                 </div>
                             </div>
                         </td>
-                        <td style="text-align: right; font-weight: 500; color: var(--text-primary); white-space: nowrap;">
-                            R${{ item.patrimony|floatformat:2|intcomma }}
+                        <td class="font-mono" style="text-align: right;">
+                            <div class="text-white" style="font-weight: 600;">R$ {{ item.current_price|floatformat:2 }}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">PM R$ {{ item.pm|floatformat:2 }}</div>
                         </td>
-                        <td style="text-align: right; font-weight: 500; color: {% if item.rentabilidade >= 0 %}var(--success){% else %}var(--danger){% endif %}; white-space: nowrap;">
-                            R${{ item.rentabilidade|floatformat:2|intcomma }}<br>
-                            <span style="font-size: 11px;">({{ item.rentabilidade_perc|floatformat:2 }}%)</span>
+                        <td class="font-mono" style="text-align: right; min-width: 90px;">
+                            <div class="text-white" style="font-size: 12.5px; font-weight: 600;">{{ item.weight_pct|floatformat:1 }}%</div>
+                            <div class="goal-mini-bar" style="margin-top: 4px;">
+                                <div class="goal-mini-fill fill-green" style="width: {{ item.weight_pct|unlocalize }}%;"></div>
+                            </div>
+                        </td>
+                        <td class="font-mono" style="text-align: right;">
+                            {% if item.dy_ttm > 0 %}
+                                <span class="inv-dy-badge">{{ item.dy_ttm|floatformat:2 }}%</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="value-cell font-mono" style="text-align: right; white-space: nowrap;">
+                            R$ {{ item.patrimony|floatformat:2 }}
+                        </td>
+                        <td class="font-mono" style="text-align: right; white-space: nowrap;">
+                            <div class="{% if item.rentabilidade >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-weight: 700;">
+                                {% if item.rentabilidade >= 0 %}+{% endif %}R$ {{ item.rentabilidade|floatformat:2 }}
+                            </div>
+                            <div class="{% if item.rentabilidade >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 11px;">
+                                ({% if item.rentabilidade >= 0 %}+{% endif %}{{ item.rentabilidade_perc|floatformat:2 }}%)
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 24px;">
                             Nenhum ativo na carteira no momento.
                         </td>
                     </tr>
@@ -120,27 +238,74 @@
             </table>
         </div>
     </div>
+</div>
 
-    <!-- Gráfico de Proventos nos Últimos 12 Meses (Empilhado por Ativo) -->
-    <div class="panel panel-wide">
+<!-- 3. GRID DE PROVENTOS: EVOLUÇÃO MENSAL 12M (8 COLS) + TOP PAGADORES DE DIVIDENDOS (4 COLS) -->
+<div class="inv-bottom-grid">
+    <!-- Evolução Mensal de Proventos por Ativo -->
+    <div class="panel inv-col-div-chart">
         <div class="panel-header">
-            <h3 class="panel-title">Evolução Mensal de Proventos por Ativo (Últimos 12 Meses)</h3>
+            <div>
+                <h2 class="panel-title"><i class="ri-bar-chart-stacked-line text-success"></i> Mapa de Proventos Mensais por Ativo (Últimos 12 Meses)</h2>
+                <p class="panel-desc">Distribuição empilhada de dividendos, JCP e rendimentos de FIIs creditados em conta</p>
+            </div>
+            <a href="{% url 'investments:dividends_charts' %}" class="btn-secondary btn-sm">
+                Análise Completa <i class="ri-arrow-right-up-line"></i>
+            </a>
         </div>
-        <div style="height: 350px; position: relative;">
+        <div class="inv-div-chart-box">
             <canvas id="dividendsMonthlyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Ranking de Maiores Pagadores de Proventos (12m) -->
+    <div class="panel inv-col-top-payers">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title"><i class="ri-trophy-line text-warning"></i> Top Geradores de Renda</h2>
+                <p class="panel-desc">Ativos com maior volume pago nos últimos 12m</p>
+            </div>
+            <span class="tag font-mono">R$ {{ ttm_dividends|floatformat:0 }}</span>
+        </div>
+
+        <div class="top-payers-list">
+            {% for tp in top_payers %}
+            <div class="payer-card">
+                <div class="payer-top">
+                    <div class="asset-cell">
+                        <div class="asset-icon">{{ tp.ticker|slice:":4" }}</div>
+                        <div class="asset-info">
+                            <span class="asset-ticker">{{ tp.ticker }}</span>
+                            <span class="asset-type">DY {{ tp.dy_ttm|floatformat:2 }}% a.a.</span>
+                        </div>
+                    </div>
+                    <div class="payer-values font-mono">
+                        <strong class="text-success">R$ {{ tp.ttm_divs|floatformat:2 }}</strong>
+                        <span>R$ {{ tp.monthly_avg|floatformat:2 }}/mês</span>
+                    </div>
+                </div>
+                <div class="goal-mini-bar">
+                    <div class="goal-mini-fill fill-amber" style="width: {{ tp.share_of_divs_pct|unlocalize }}%;"></div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted" style="font-size: 13px;">Nenhum provento registrado nos últimos 12 meses.</p>
+            {% endfor %}
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<!-- Passa dados dinâmicos do Django para o JS externo -->
+{% block extra_js %}
 <script>
-    const allocationLabels = [{% for alloc in allocation %}'{{ alloc.name }}',{% endfor %}];
-    const allocationData = [{% for alloc in allocation %}{{ alloc.value|stringformat:"f" }},{% endfor %}];
-    const dividendsMonthlyLabels = {{ bar_chart_labels|safe }};
-    const dividendsMonthlyDatasets = {{ bar_chart_datasets|safe }};
+    const strategicLabels = {{ strategic_labels|default:"[]"|safe }};
+    const strategicActualPcts = {{ strategic_actual_pcts|default:"[]"|safe }};
+    const strategicActualVals = {{ strategic_actual_vals|default:"[]"|safe }};
+    const strategicTargetPcts = {{ strategic_target_pcts|default:"[]"|safe }};
+    const strategicTargetVals = {{ strategic_target_vals|default:"[]"|safe }};
+    const strategicColors = {{ strategic_colors|default:"[]"|safe }};
+    const dividendsMonthlyLabels = {{ bar_chart_labels|default:"[]"|safe }};
+    const dividendsMonthlyDatasets = {{ bar_chart_datasets|default:"[]"|safe }};
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'js/investments_dashboard.js' %}"></script>
+<script src="{% static 'js/investments_dashboard.js' %}?v=20261028d"></script>
 {% endblock %}

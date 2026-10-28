@@ -1,8 +1,236 @@
 /* ==========================================================================
-   SISTEMA DE ABAS (TABS) - INVESTIMENTOS
+   PORTFÓLIO DE INVESTIMENTOS EXECUTIVO - GREYWORKS FINANCE
+   ========================================================================== */
+
+.btn-sm {
+    padding: 7px 14px;
+    font-size: 12.5px;
+    border-radius: 8px;
+}
+
+.panel-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.inv-kpi-link {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--accent-primary);
+    transition: opacity 0.2s;
+}
+
+.inv-kpi-link:hover {
+    opacity: 0.8;
+}
+
+/* 1. Grid Principal: Composição (5 cols) + Posições (7 cols) */
+.inv-main-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 22px;
+    margin-bottom: 24px;
+    align-items: stretch;
+}
+
+.inv-col-alloc {
+    grid-column: span 5;
+    display: flex;
+    flex-direction: column;
+}
+
+.inv-col-positions {
+    grid-column: span 7;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 1140px) {
+    .inv-col-alloc, .inv-col-positions {
+        grid-column: span 12;
+    }
+}
+
+.inv-ring-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.inv-ring-badge {
+    flex: 1;
+    min-width: 160px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 9px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+}
+
+.inv-ring-badge strong {
+    color: var(--text-white);
+}
+
+.ring-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.ring-outer {
+    border: 2.5px dashed var(--accent-primary);
+    background: rgba(0, 220, 130, 0.12);
+}
+
+.ring-inner {
+    border: 3px solid var(--info);
+    background: var(--info);
+}
+
+.inv-doughnut-wrap {
+    display: block;
+    width: 100%;
+    height: 290px;
+    position: relative;
+}
+
+/* Filtros Rápidos da Tabela de Posições */
+.inv-filter-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.inv-pill {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 6px 13px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-base);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.inv-pill:hover {
+    color: var(--text-white);
+    border-color: var(--border-focus);
+}
+
+.inv-pill.active {
+    background: var(--accent-soft);
+    color: var(--accent-primary);
+    border-color: rgba(0, 220, 130, 0.35);
+}
+
+.inv-positions-table-wrap {
+    max-height: 315px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.inv-positions-table-wrap .data-table th {
+    position: sticky;
+    top: 0;
+    background-color: var(--card-bg);
+    z-index: 3;
+    padding-top: 8px;
+    padding-bottom: 10px;
+}
+
+.inv-dy-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+/* 2. Grid Inferior: Evolução de Proventos (8 cols) + Top Pagadores (4 cols) */
+.inv-bottom-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 22px;
+    margin-bottom: 20px;
+}
+
+.inv-col-div-chart {
+    grid-column: span 8;
+}
+
+.inv-col-top-payers {
+    grid-column: span 4;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 1140px) {
+    .inv-col-div-chart, .inv-col-top-payers {
+        grid-column: span 12;
+    }
+}
+
+.inv-div-chart-box {
+    height: 330px;
+    position: relative;
+}
+
+.top-payers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.payer-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 11px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.payer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.payer-values {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.payer-values strong {
+    font-size: 13.5px;
+}
+
+.payer-values span {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   SISTEMA DE ABAS (TABS) - SUBPÁGINAS DE INVESTIMENTOS
    ========================================================================== */
 .tabs-container {
-    border-bottom: 1px solid var(--panel-border);
+    border-bottom: 1px solid var(--border-subtle);
     margin-bottom: 24px;
     display: flex;
     gap: 24px;
@@ -14,16 +242,16 @@
     border: none;
     color: var(--text-secondary);
     font-family: var(--font-heading);
-    font-size: 16px;
-    font-weight: 500;
-    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 4px;
     cursor: pointer;
     position: relative;
-    transition: color 0.3s;
+    transition: color 0.25s;
 }
 
 .tab-btn:hover {
-    color: var(--text-primary);
+    color: var(--text-white);
 }
 
 .tab-btn.active {
@@ -38,6 +266,7 @@
     width: 100%;
     height: 2px;
     background: var(--accent-primary);
+    box-shadow: 0 0 8px var(--accent-glow);
     border-radius: 2px 2px 0 0;
 }
 
@@ -54,14 +283,10 @@
    ========================================================================== */
 .file-drop-area {
     position: relative;
+    background: var(--panel-bg);
 }
 
 .file-drop-area:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--panel-hover);
     border-color: var(--accent-primary) !important;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }

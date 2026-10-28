@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ESTILOS DE LANÇAMENTO MANUAL DE INVESTIMENTOS
+   ESTILOS DE LANÇAMENTO MANUAL DE INVESTIMENTOS - GREYWORKS
    ========================================================================== */
 .toggle-section {
     display: none;
@@ -10,11 +10,11 @@
 }
 
 .btn-delete {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: var(--danger-bg);
+    color: var(--coral);
     border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: 6px;
-    padding: 4px 8px;
+    padding: 5px 9px;
     cursor: pointer;
     font-size: 12px;
     display: inline-flex;
@@ -24,7 +24,7 @@
 }
 
 .btn-delete:hover {
-    background: #ef4444;
+    background: var(--danger);
     color: #fff;
     transform: translateY(-1px);
 }
@@ -36,13 +36,14 @@
 }
 
 .price-input {
-    width: 100px;
+    width: 110px;
     padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    color: var(--text-primary);
-    font-size: 13px;
+    color: var(--text-white);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
     outline: none;
 }
 
@@ -51,19 +52,20 @@
 }
 
 .btn-save-inline {
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--success);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: var(--accent-soft);
+    color: var(--accent-primary);
+    border: 1px solid rgba(0, 220, 130, 0.3);
     border-radius: 6px;
-    padding: 6px 10px;
+    padding: 6px 12px;
     cursor: pointer;
     font-size: 12px;
+    font-weight: 600;
     transition: all 0.2s;
 }
 
 .btn-save-inline:hover {
-    background: var(--success);
-    color: #fff;
+    background: var(--accent-primary);
+    color: #0B0D11;
 }
 
 /* Layout e Grids */
@@ -87,7 +89,12 @@
     flex-direction: column;
 }
 
-/* Formulário e Agrupamentos */
+@media (max-width: 1024px) {
+    .manual-col-left, .manual-col-right {
+        grid-column: span 12;
+    }
+}
+
 .radio-options-wrapper {
     display: flex;
     gap: 16px;
@@ -100,6 +107,10 @@
     gap: 6px;
     cursor: pointer;
     color: var(--text-primary);
+}
+
+.radio-label-item input {
+    accent-color: var(--accent-primary);
 }
 
 .new-asset-border-box {
@@ -141,7 +152,7 @@
 .assets-scroll-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     max-height: 700px;
     overflow-y: auto;
     padding-right: 5px;
@@ -149,13 +160,18 @@
 
 /* Cards de Preço de Ativos */
 .asset-price-card {
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    transition: border-color 0.2s;
+}
+
+.asset-price-card:hover {
+    border-color: var(--border-focus);
 }
 
 .asset-price-header {
@@ -173,7 +189,7 @@
 .asset-icon-box {
     width: 32px;
     height: 32px;
-    font-size: 12px;
+    font-size: 11px;
     flex-shrink: 0;
 }
 
@@ -183,8 +199,9 @@
 }
 
 .asset-title-bold {
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-white);
 }
 
 .asset-subtitle-small {
@@ -205,7 +222,8 @@
 }
 
 .asset-price-val-wrapper span.price {
-    font-weight: 600;
+    font-weight: 700;
+    font-family: var(--font-mono);
     color: var(--accent-primary);
 }
 

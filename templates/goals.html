@@ -2,205 +2,267 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}Metas & Planejamento | Kallia{% endblock %}
-{% block page_title %}Metas e Planejamento{% endblock %}
-{% block page_subtitle %}Simulador de independência, checklist do salário e estratégias de rebalanceamento{% endblock %}
+{% block title %}Metas & Simulador | GreyWorks Finance{% endblock %}
+{% block page_title %}Metas & Engenharia Patrimonial{% endblock %}
+{% block page_subtitle %}Simulador gráfico de juros compostos, rebalanceamento estratégico e rotina mensal{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/goals.css' %}">
 {% endblock %}
 
+{% block header_actions %}
+<a href="{% url 'settings' %}" class="btn-outline-green">
+    <i class='bx bx-slider-alt' style="font-size: 17px;"></i>
+    <span>Ajustar Metas & Pesos</span>
+</a>
+{% endblock %}
+
 {% block content %}
-<!-- KPIs Superiores de Metas -->
-<div class="dashboard-grid">
-    <div class="panel kpi-card" style="grid-column: span 4; display: flex; flex-direction: column;">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-blue">
-                <i class='bx bx-wallet-alt'></i>
+<!-- 1. KPIs Executivos Superiores com Barras de Progresso -->
+<div class="goals-kpi-grid">
+    <!-- KPI 1: Meta Principal de Patrimônio -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-green">
+                <i class='bx bx-trophy'></i>
             </div>
-            <span>Patrimônio Atual / Meta</span>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Meta de Patrimônio</span>
+                <span class="goal-kpi-pct font-mono">{{ patrimony_progress }}%</span>
+            </div>
         </div>
-        <div class="kpi-value" style="color: var(--text-primary); font-size: 20px;">R$ {{ total_patrimony|floatformat:0|intcomma }} / R$ 50.000</div>
-        <div class="kpi-trend trend-up" style="background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 0;">
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R${{ total_patrimony|floatformat:0|intcomma }}</span>
+            <span class="target-val">/ R${{ patrimony_target|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-green" style="width: {{ patrimony_progress }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
             {% if patrimony_missing > 0 %}
-                Falta R$ {{ patrimony_missing|floatformat:2|intcomma }} para os R$ 50k
+                <span>Restam <strong class="font-mono">R${{ patrimony_missing|floatformat:0|intcomma }}</strong> para o alvo</span>
             {% else %}
-                Meta de R$ 50k alcançada! 🎉
+                <span class="text-success"><i class='bx bx-check-double'></i> Meta patrimonial superada!</span>
             {% endif %}
         </div>
     </div>
 
-    <div class="panel kpi-card" style="grid-column: span 4; display: flex; flex-direction: column;">
-        <div class="kpi-header">
-            <div class="kpi-icon icon-purple">
-                <i class='bx bx-plus-circle'></i>
+    <!-- KPI 2: Ritmo de Aporte Mensal -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-blue">
+                <i class='bx bx-trending-up'></i>
             </div>
-            <span>Aporte Atual (6m) / Meta</span>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Aporte Médio (6m)</span>
+                <span class="goal-kpi-pct font-mono" style="color: var(--info);">{{ contribution_progress }}%</span>
+            </div>
         </div>
-        <div class="kpi-value" style="color: var(--text-primary); font-size: 20px;">R$ {{ avg_contribution|floatformat:0|intcomma }} / R$ 1.000</div>
-        <div class="kpi-trend trend-up" style="background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 0;">
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R${{ avg_contribution|floatformat:0|intcomma }}</span>
+            <span class="target-val">/ R${{ contribution_target|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-blue" style="width: {{ contribution_progress }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
             {% if contribution_missing > 0 %}
-                Falta R$ {{ contribution_missing|floatformat:2|intcomma }} para a meta de R$ 1k
+                <span>Faltam <strong class="font-mono">R${{ contribution_missing|floatformat:0|intcomma }}/mês</strong> p/ meta</span>
             {% else %}
-                Meta de aporte atingida! 🚀
+                <span class="text-success"><i class='bx bx-rocket'></i> Ritmo acima da meta mensal!</span>
             {% endif %}
         </div>
     </div>
 
-    <div class="panel kpi-card" style="grid-column: span 4; display: flex; flex-direction: column;">
-        <div class="kpi-header">
+    <!-- KPI 3: Reserva de Liquidez & Autonomia -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
+            <div class="kpi-icon icon-amber">
+                <i class='bx bx-shield-quarter'></i>
+            </div>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Reserva & Liquidez</span>
+                <span class="goal-kpi-pct font-mono" style="color: var(--warning);">{{ emergency_progress }}%</span>
+            </div>
+        </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R${{ fixed_income_patrimony|floatformat:0|intcomma }}</span>
+            <span class="target-val">/ R${{ emergency_target|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-amber" style="width: {{ emergency_progress }}%;"></div>
+        </div>
+        <div class="goal-kpi-foot">
+            <span>Autonomia estimada: <strong class="font-mono" style="color: var(--text-white);">{{ runway_months }} meses</strong> de custo</span>
+        </div>
+    </div>
+
+    <!-- KPI 4: Renda Passiva & Yield -->
+    <div class="panel goal-kpi-card">
+        <div class="goal-kpi-top">
             <div class="kpi-icon icon-green">
                 <i class='bx bx-coin-stack'></i>
             </div>
-            <span>Rendimento Mensal (Yield)</span>
-        </div>
-        <div class="kpi-value" style="color: var(--text-primary); font-size: 20px;">{{ yield_pct }}% ao mês</div>
-        <div class="kpi-trend trend-up" style="background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 500; padding: 0;">
-            Comparado à Selic: ~1,13% (14,50% a.a.)
-        </div>
-    </div>
-</div>
-
-<div class="goals-grid">
-    <!-- Bloco 1: Calculadora de Metas e Independência -->
-    <div class="panel panel-left" style="display: flex; flex-direction: column;">
-        <div class="panel-header">
-            <h3 class="panel-title">Calculadora de Independência Financeira</h3>
-        </div>
-        
-        <!-- Resultados da Calculadora -->
-        <h4 style="font-size: 15px; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Tempo Estimado para Metas</h4>
-        <div class="calculator-results" style="margin-top: 0; margin-bottom: 20px;">
-            <div class="result-card" id="card-50k">
-                <span class="result-title">Tempo até R$ 50.000</span>
-                <span class="result-value" id="time-50k">--</span>
-            </div>
-            <div class="result-card" id="card-100k">
-                <span class="result-title">Tempo até R$ 100.000</span>
-                <span class="result-value" id="time-100k">--</span>
-            </div>
-            <div class="result-card" id="card-1m" style="grid-column: span 2;">
-                <span class="result-title">Tempo até R$ 1.000.000 (1 Milhão)</span>
-                <span class="result-value" id="time-1m">--</span>
+            <div class="goal-kpi-meta">
+                <span class="goal-kpi-label">Renda Passiva (12m)</span>
+                <span class="goal-kpi-pct font-mono">{{ yield_pct }}% a.m.</span>
             </div>
         </div>
-
-        <h4 style="font-size: 15px; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Projeção de Patrimônio Futuro</h4>
-        <div class="calculator-results" style="grid-template-columns: repeat(3, 1fr); margin-top: 0; margin-bottom: 20px;">
-            <div class="result-card projection">
-                <span class="result-title">Em 1 Ano</span>
-                <span class="result-value" id="proj-1y">--</span>
-            </div>
-            <div class="result-card projection">
-                <span class="result-title">Em 5 Anos</span>
-                <span class="result-value" id="proj-5y">--</span>
-            </div>
-            <div class="result-card projection">
-                <span class="result-title">Em 10 Anos</span>
-                <span class="result-value" id="proj-10y">--</span>
-            </div>
+        <div class="goal-kpi-numbers">
+            <span class="current-val">R${{ avg_dividend|floatformat:2|intcomma }}</span>
+            <span class="target-val">/ R${{ passive_target|floatformat:0|intcomma }}</span>
         </div>
-
-        <hr style="border: 0; border-top: 1px solid var(--panel-border); margin: 15px 0;">
-
-        <!-- Inputs da Calculadora -->
-        <div class="input-group">
-            <label class="input-label">
-                <span>Patrimônio Inicial</span>
-                <span class="value" id="label-patrimony">R$ 0,00</span>
-            </label>
-            <div class="text-input-wrapper">
-                <span class="prefix">R$</span>
-                <input type="text" id="calc-patrimony" value="{{ total_patrimony|stringformat:'.2f' }}" placeholder="0,00">
-            </div>
+        <div class="goal-mini-bar">
+            <div class="goal-mini-fill fill-green" style="width: {{ passive_progress }}%;"></div>
         </div>
-
-        <div class="input-group">
-            <label class="input-label">
-                <span>Aporte Mensal</span>
-                <span class="value" id="label-contribution">R$ 0,00</span>
-            </label>
-            <div class="text-input-wrapper">
-                <span class="prefix">R$</span>
-                <input type="text" id="calc-contribution" value="{{ avg_contribution|stringformat:'.2f' }}" placeholder="0,00">
-            </div>
-        </div>
-
-        <div class="input-group" style="margin-bottom: 10px;">
-            <label class="input-label">
-                <span>Taxa de Rendimento Mensal</span>
-                <span class="value" id="label-rate">0,80% ao mês</span>
-            </label>
-            <input type="range" id="calc-rate" class="range-slider" min="0.1" max="2.0" step="0.05" value="0.80">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
-                <span>Poupança/Conservador (0.5%)</span>
-                <span>Moderado/Yield Alto (1.2%)</span>
-                <span>Agressivo (2.0%)</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bloco 4: Lembretes Fundamentais -->
-    <div class="panel panel-right" style="display: flex; flex-direction: column;">
-        <div class="panel-header" style="margin-bottom: 16px;">
-            <h3 class="panel-title">Lembretes Fundamentais</h3>
-            <span style="font-size: 11px; color: var(--accent-primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Mentalidade & Foco</span>
-        </div>
-        
-        <div class="reminders-list">
-            <!-- Item 1: Estratégia de Reservas -->
-            <div class="reminder-card reminder-green">
-                <div class="reminder-icon icon-green">
-                    <i class='bx bx-shield-quarter'></i>
-                </div>
-                <div class="reminder-content">
-                    <span class="reminder-tag">Estratégia de Reservas</span>
-                    <p class="reminder-text">A reserva de emergência deve ser de <strong>R$ 6.000 (6k)</strong>. Só depois pensar na reserva de oportunidade.</p>
-                </div>
-            </div>
-
-            <!-- Item 2: Patrimônio Real -->
-            <div class="reminder-card reminder-purple">
-                <div class="reminder-icon icon-purple">
-                    <i class='bx bx-home-alt'></i>
-                </div>
-                <div class="reminder-content">
-                    <span class="reminder-tag">Patrimônio Real</span>
-                    <p class="reminder-text">Lembre-se de que patrimônio vai além do dinheiro. Bens como sua casa ou carro possuem um valor de uso real superior ao dinheiro investido.</p>
-                </div>
-            </div>
-
-            <!-- Item 3: Aporte -->
-            <div class="reminder-card reminder-blue">
-                <div class="reminder-icon icon-blue">
-                    <i class='bx bx-trending-up'></i>
-                </div>
-                <div class="reminder-content">
-                    <span class="reminder-tag">Aporte</span>
-                    <p class="reminder-text">O segredo para aumentar o patrimônio é ter uma renda extra para aportar mais.</p>
-                </div>
-            </div>
-
-            <!-- Item 4: Dica de Ouro -->
-            <div class="reminder-card reminder-yellow">
-                <div class="reminder-icon icon-yellow">
-                    <i class='bx bx-star'></i>
-                </div>
-                <div class="reminder-content">
-                    <span class="reminder-tag">Dica de Ouro</span>
-                    <p class="reminder-text">O segredo é a consistência de todo mês aportar, estudar mais antes de investir e a diversificação.</p>
-                </div>
-            </div>
+        <div class="goal-kpi-foot">
+            <span>Ref. Benchmark: <strong class="font-mono">{{ config.benchmark_annual_rate }}% a.a.</strong> ({{ passive_progress }}% da meta)</span>
         </div>
     </div>
 </div>
 
+<!-- 2. Simulador Interativo de Independência Financeira (Gráfico + Sliders + Milestones) -->
+<div class="panel simulator-master-panel">
+    <div class="panel-header simulator-header">
+        <div>
+            <h3 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+                <i class='bx bx-calculator' style="color: var(--accent-primary);"></i>
+                Simulador de Juros Compostos & Independência Financeira
+            </h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
+                Simule cenários de aporte, rentabilidade e horizonte de tempo para projetar sua curva de acumulação.
+            </p>
+        </div>
+        <span class="tag" style="background: var(--accent-soft); color: var(--accent-primary);">SIMULAÇÃO EM TEMPO REAL</span>
+    </div>
+
+    <div class="simulator-layout">
+        <!-- Coluna de Controles (Esquerda) -->
+        <div class="simulator-controls">
+            <div class="input-group">
+                <label class="input-label" for="calc-patrimony">
+                    <span>Patrimônio Inicial</span>
+                    <span class="value font-mono" id="label-patrimony">R$ 0,00</span>
+                </label>
+                <div class="text-input-wrapper">
+                    <span class="prefix font-mono">R$</span>
+                    <input type="text" id="calc-patrimony" value="{{ total_patrimony|stringformat:'.2f' }}" placeholder="0,00">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label" for="calc-contribution">
+                    <span>Aporte Mensal</span>
+                    <span class="value font-mono" id="label-contribution">R$ 0,00</span>
+                </label>
+                <div class="text-input-wrapper">
+                    <span class="prefix font-mono">R$</span>
+                    <input type="text" id="calc-contribution" value="{% if avg_contribution > 0 %}{{ avg_contribution|stringformat:'.2f' }}{% else %}{{ contribution_target|stringformat:'.2f' }}{% endif %}" placeholder="0,00">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label" for="calc-rate">
+                    <span>Taxa de Rentabilidade Mensal</span>
+                    <span class="value font-mono" id="label-rate">{{ config.simulator_monthly_rate }}% a.m.</span>
+                </label>
+                <input type="range" id="calc-rate" class="range-slider" min="0.20" max="2.00" step="0.05" value="{{ config.simulator_monthly_rate|stringformat:'.2f' }}">
+                <div class="slider-legend">
+                    <span>Conservador (0.5%)</span>
+                    <span>Moderado (0.95%)</span>
+                    <span>Arrojado (1.5%+)</span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label" for="calc-years">
+                    <span>Horizonte de Projeção</span>
+                    <span class="value font-mono" id="label-years">10 anos</span>
+                </label>
+                <input type="range" id="calc-years" class="range-slider" min="1" max="30" step="1" value="10">
+                <div class="slider-legend">
+                    <span>Curto (1-3a)</span>
+                    <span>Médio (5-10a)</span>
+                    <span>Longo Prazo (20-30a)</span>
+                </div>
+            </div>
+
+            <!-- Resumo do Horizonte Selecionado -->
+            <div class="horizon-summary-box">
+                <div class="horizon-summary-row">
+                    <span class="h-label">Patrimônio Final Projetado</span>
+                    <span class="h-val h-highlight font-mono" id="summary-final-patrimony">--</span>
+                </div>
+                <div class="horizon-summary-row">
+                    <span class="h-label">Total Desembolsado (Capital)</span>
+                    <span class="h-val font-mono" id="summary-total-invested">--</span>
+                </div>
+                <div class="horizon-summary-row">
+                    <span class="h-label">Ganho Exclusivo em Juros</span>
+                    <span class="h-val text-success font-mono" id="summary-total-interest">--</span>
+                </div>
+                <div class="horizon-summary-row horizon-passive-row">
+                    <span class="h-label">Renda Passiva Mensal Estimada</span>
+                    <span class="h-val font-mono" style="color: var(--warning);" id="summary-passive-income">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Visual: Gráfico de Curva + Linha do Tempo de Marcos (Direita) -->
+        <div class="simulator-visuals">
+            <div class="chart-wrapper-box">
+                <div class="chart-box-header">
+                    <span class="chart-subtitle">Curva de Evolução: Capital Aportado vs. Juros Compostos</span>
+                </div>
+                <div style="height: 255px; position: relative;">
+                    <canvas id="compoundProjectionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Linha do Tempo de Marcos (Milestones) -->
+            <div class="milestones-section">
+                <h4 class="milestones-heading">Tempo Estimado para Marcos Patrimoniais</h4>
+                <div class="milestones-grid">
+                    <div class="result-card" id="card-emergency" data-target="{{ emergency_target|stringformat:'f' }}">
+                        <span class="result-badge">MARCO 01</span>
+                        <span class="result-title">Reserva (R${{ emergency_target|floatformat:0|intcomma }})</span>
+                        <span class="result-value font-mono" id="time-emergency">--</span>
+                    </div>
+                    <div class="result-card" id="card-100k" data-target="100000">
+                        <span class="result-badge">MARCO 02</span>
+                        <span class="result-title">6 Dígitos (R$ 100.000)</span>
+                        <span class="result-value font-mono" id="time-100k">--</span>
+                    </div>
+                    <div class="result-card" id="card-main-goal" data-target="{{ patrimony_target|stringformat:'f' }}">
+                        <span class="result-badge">META PRINCIPAL</span>
+                        <span class="result-title">Alvo (R${{ patrimony_target|floatformat:0|intcomma }})</span>
+                        <span class="result-value font-mono" id="time-main-goal">--</span>
+                    </div>
+                    <div class="result-card" id="card-1m" data-target="1000000">
+                        <span class="result-badge">MARCO 04</span>
+                        <span class="result-title">Primeiro Milhão (R$ 1M)</span>
+                        <span class="result-value font-mono" id="time-1m">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Estratégia de Alocação (Esquerda) & Rotina Mensal Dinâmica (Direita) -->
 <div class="goals-grid">
-    <!-- Bloco 3: Estratégia ARCA e Balanceamento -->
+    <!-- Bloco Esquerdo: Alocação & Rebalanceamento -->
     <div class="panel panel-left" style="display: flex; flex-direction: column;">
         <div class="panel-header">
-            <h3 class="panel-title">Estratégia ARCA: Alocação & Rebalanceamento</h3>
-            <span style="font-size: 12px; color: var(--text-secondary);">Meta: <strong>25%</strong> para cada classe</span>
+            <div>
+                <h3 class="panel-title">Alocação Estratégica & Rebalanceamento</h3>
+                <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">
+                    Comparativo entre posição atual da carteira e pesos-alvo configurados
+                </p>
+            </div>
+            <a href="{% url 'settings' %}" class="tag" style="color: var(--accent-primary); background: var(--accent-soft);">
+                <i class='bx bx-customize'></i> Editar Pesos
+            </a>
         </div>
         
         <div class="arca-container">
@@ -208,95 +270,99 @@
             <div class="arca-item">
                 <div class="arca-header-row">
                     <span class="arca-name">{{ c.name }}</span>
-                    <span class="arca-metrics">
+                    <span class="arca-metrics font-mono">
                         Atual: <strong>R${{ c.value|floatformat:2|intcomma }}</strong> ({{ c.percentage }}%)
                     </span>
                 </div>
                 
                 <div class="arca-bar-wrapper">
-                    <div class="arca-bar-target-marker" title="Meta de 25%"></div>
-                    <!-- Se a porcentagem passar de 100%, limita a 100% de largura visual -->
-                    <div class="arca-bar-fill" style="width: {% if c.percentage > 100 %}100{% else %}{{ c.percentage }}{% endif %}%; background: {{ c.status_color }};"></div>
+                    <div class="arca-bar-target-marker" style="left: {{ c.target_percentage|stringformat:'f' }}%;" title="Meta configurada: {{ c.target_percentage }}%"></div>
+                    <div class="arca-bar-fill" style="width: {% if c.percentage > 100 %}100{% else %}{{ c.percentage|stringformat:'f' }}{% endif %}%; background: {{ c.status_color }};"></div>
                 </div>
 
                 <div class="arca-footer-row">
-                    <span style="color: var(--text-secondary);">Meta teórica (25%): R${{ c.target_value|floatformat:2|intcomma }}</span>
+                    <span class="font-mono" style="color: var(--text-secondary);">
+                        Alvo ({{ c.target_percentage }}%): R${{ c.target_value|floatformat:2|intcomma }}
+                    </span>
                     {% if c.status_class == 'status-below' %}
-                        <span class="arca-rebalance-pill pill-buy">Aportar: R${{ c.abs_difference|floatformat:2|intcomma }}</span>
+                        <span class="arca-rebalance-pill pill-buy font-mono">Aportar: R${{ c.abs_difference|floatformat:2|intcomma }}</span>
                     {% elif c.status_class == 'status-above' %}
-                        <span class="arca-rebalance-pill pill-above">Sobrealocado: +R${{ c.abs_difference|floatformat:2|intcomma }}</span>
+                        <span class="arca-rebalance-pill pill-above font-mono">Sobrealocado: +R${{ c.abs_difference|floatformat:2|intcomma }}</span>
                     {% else %}
-                        <span class="arca-rebalance-pill pill-balanced">Em equilíbrio</span>
+                        <span class="arca-rebalance-pill pill-balanced font-mono">Em equilíbrio</span>
                     {% endif %}
                 </div>
             </div>
             {% empty %}
             <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
-                Nenhum ativo encontrado para mapear a alocação ARCA.
+                Nenhum ativo encontrado para mapear a alocação.
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Bloco 2: Passo a Passo do Salário -->
+    <!-- Bloco Direito: Rotina Financeira Mensal (Checklist Dinâmico) -->
     <div class="panel panel-right" style="display: flex; flex-direction: column;">
-        <div class="panel-header" style="margin-bottom: 10px;">
-            <h3 class="panel-title">Passo a Passo do Salário</h3>
-            <span id="checklist-counter" style="font-size: 12px; font-weight: 600; color: var(--accent-primary);">0/10 concluídos</span>
+        <div class="panel-header" style="margin-bottom: 12px;">
+            <div>
+                <h3 class="panel-title">Rotina Financeira Mensal</h3>
+                <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">
+                    Checklist operacional persistido no banco de dados
+                </p>
+            </div>
+            <span id="checklist-counter" class="tag font-mono" style="background: var(--accent-soft); color: var(--accent-primary);">
+                {{ checklist_done }}/{{ checklist_total }} ({{ checklist_pct }}%)
+            </span>
         </div>
         
         <div class="checklist-progress-bar">
-            <div class="checklist-progress-fill" id="checklist-progress"></div>
+            <div class="checklist-progress-fill" id="checklist-progress" style="width: {{ checklist_pct }}%;"></div>
         </div>
 
         <div class="checklist-container" id="checklist-container">
-            <!-- Checklist Items -->
-            <div class="checklist-item" data-idx="0">
+            {% for item in checklist_items %}
+            <div class="checklist-item {% if item.is_completed %}checked{% endif %}"
+                 data-id="{{ item.id }}"
+                 data-toggle-url="{% url 'toggle_checklist_item' item.id %}">
                 <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 30] Pagar a fatura do cartão.</span>
+                <div class="checklist-body">
+                    <span class="checklist-day font-mono">DIA {{ item.day_of_month|stringformat:"02d" }}</span>
+                    <span class="checklist-text">{{ item.title }}</span>
+                </div>
+                <form method="POST" action="{% url 'delete_checklist_item' item.id %}" class="checklist-del-form" onclick="event.stopPropagation();">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="goals">
+                    <button type="submit" class="checklist-del-btn" title="Remover item">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </form>
             </div>
-            <div class="checklist-item" data-idx="1">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 30] Aporte na Reserva de Emergência.</span>
+            {% empty %}
+            <div style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 13px;">
+                Nenhuma tarefa cadastrada na rotina mensal. Adicione abaixo!
             </div>
-            <div class="checklist-item" data-idx="2">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 1] Receber Salário.</span>
-            </div>
-            <div class="checklist-item" data-idx="3">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 1] Pegar o relatório de transações da B3.</span>
-            </div>
-            <div class="checklist-item" data-idx="4">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 1] Aportar na corretora.</span>
-            </div>
-            <div class="checklist-item" data-idx="5">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 1] Pix da mãe e Breno.</span>
-            </div>
-            <div class="checklist-item" data-idx="6">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 7] Pagar o aluguel.</span>
-            </div>
-            <div class="checklist-item" data-idx="7">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 10] Pagar o seguro.</span>
-            </div>
-            <div class="checklist-item" data-idx="8">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 10] Pagar faculdade.</span>
-            </div>
-            <div class="checklist-item" data-idx="9">
-                <div class="checklist-checkbox"><i class='bx bx-check'></i></div>
-                <span class="checklist-text">[DIA 10] Pagar conta de luz.</span>
-            </div>
-                    
+            {% endfor %}
         </div>
+
+        <!-- Adicionar Tarefa Rápida -->
+        <form method="POST" action="{% url 'settings' %}" class="quick-checklist-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_checklist_item">
+            <input type="hidden" name="next" value="goals">
+            <input type="number" name="day_of_month" min="1" max="31" value="5" class="quick-day-input font-mono" title="Dia do mês" required>
+            <input type="text" name="title" class="quick-title-input" placeholder="Adicionar nova etapa na rotina mensal..." required>
+            <button type="submit" class="btn-primary" style="padding: 9px 14px;">
+                <i class='bx bx-plus'></i>
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+    const csrfTokenGoals = '{{ csrf_token }}';
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'js/goals.js' %}"></script>
 {% endblock %}

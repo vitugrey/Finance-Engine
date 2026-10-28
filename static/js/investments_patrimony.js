@@ -1,5 +1,5 @@
 // ==========================================================================
-// GRÁFICOS DE EVOLUÇÃO DE PATRIMÔNIO (INVESTIMENTOS)
+// GRÁFICOS DE EVOLUÇÃO DE PATRIMÔNIO - GREYWORKS FINANCE
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", function() {
     const monthlyCanvas = document.getElementById('monthlyChart');
@@ -12,10 +12,10 @@ document.addEventListener("DOMContentLoaded", function() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#1f2937',
-                    titleColor: '#f3f4f6',
-                    bodyColor: '#d1d5db',
-                    borderColor: '#374151',
+                    backgroundColor: '#181C24',
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#E2E8F0',
+                    borderColor: '#262B35',
                     borderWidth: 1,
                     padding: 12,
                     callbacks: {
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             let label = context.dataset.label || '';
                             if (label) { label += ': '; }
                             if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }).format(context.parsed.y).replace('R$', 'R$').replace(/\s/g, '');
+                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
                             }
                             return label;
                         }
@@ -33,18 +33,20 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    grid: { color: '#1E2330' },
                     ticks: {
-                        color: '#9ca3af',
+                        color: '#64748B',
+                        font: { family: "'JetBrains Mono', monospace", size: 11 },
                         callback: function(value) {
-                            return 'R$' + new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
+                            return 'R$' + new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
                         }
                     }
                 },
                 x: {
                     grid: { display: false },
                     ticks: {
-                        color: '#9ca3af',
+                        color: '#64748B',
+                        font: { family: "'JetBrains Mono', monospace", size: 11 },
                         maxRotation: 45,
                         minRotation: 45
                     }
@@ -52,7 +54,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         };
 
-        // Gráfico de Linha Mensal
         new Chart(monthlyCanvas.getContext('2d'), {
             type: 'line',
             data: {
@@ -60,11 +61,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 datasets: [{
                     label: 'Acumulado Mês a Mês',
                     data: monthlyData,
-                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                    borderColor: '#38bdf8',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#38bdf8',
-                    pointRadius: 2,
+                    backgroundColor: 'rgba(0, 220, 130, 0.12)',
+                    borderColor: '#00DC82',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#00DC82',
+                    pointRadius: 3,
                     fill: true,
                     tension: 0.3
                 }]
@@ -72,7 +73,6 @@ document.addEventListener("DOMContentLoaded", function() {
             options: commonOptions
         });
 
-        // Gráfico de Barra Anual
         if (yearlyCanvas && typeof yearlyLabels !== 'undefined' && typeof yearlyData !== 'undefined') {
             new Chart(yearlyCanvas.getContext('2d'), {
                 type: 'bar',
@@ -81,28 +81,19 @@ document.addEventListener("DOMContentLoaded", function() {
                     datasets: [{
                         label: 'Acumulado por Ano',
                         data: yearlyData,
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: '#3B82F6',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 6
                     }]
                 },
                 options: {
                     ...commonOptions,
                     scales: {
                         ...commonOptions.scales,
-                        y: {
-                            ...commonOptions.scales.y,
-                            ticks: {
-                                ...commonOptions.scales.y.ticks,
-                                callback: function(value) {
-                                    return 'R$' + new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
-                                }
-                            }
-                        },
                         x: {
                             ...commonOptions.scales.x,
-                            ticks: { color: '#9ca3af' } // Normal rotation for years
+                            ticks: { color: '#64748B', font: { family: "'JetBrains Mono', monospace", size: 11 } }
                         }
                     }
                 }

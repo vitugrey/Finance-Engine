@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <defs>
+    <linearGradient id="gwGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1B1E26"/>
+      <stop offset="100%" stop-color="#0E1015"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="38" height="38" rx="9" fill="url(#gwGrad)" stroke="#262B35" stroke-width="1.5"/>
+  <!-- Monograma Geométrico VG com barra diagonal em 42° conectando a perna direita do V ao G -->
+  <path d="M7.5 12H11.5L15.5 24.5L23.5 12H32.5L30.2 15.5H25.2L17.2 28H13.8L7.5 12Z" fill="#FFFFFF"/>
+  <path d="M23.5 18.5H32.5V28H21.2L23.4 24.6H28.8V21.8H21.4L23.5 18.5Z" fill="#FFFFFF"/>
+</svg>
+

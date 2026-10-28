@@ -11,6 +11,7 @@ from django.db.models.functions import TruncMonth, TruncYear
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
+from budget.models import FinancialSettings
 from .models import Asset, Dividend, Transaction, Category
 
 # Adiciona o diretório de scripts ao path para importar o motor de importação B3
@@ -21,15 +22,23 @@ if _scripts_dir not in sys.path:
 
 
 def dashboard(request):
+    config = FinancialSettings.get_solo()
     assets = Asset.objects.filter(is_active=True).order_by('asset_type', 'ticker', 'name')
 
     portfolio = []
     total_patrimony = Decimal('0')
     total_invested = Decimal('0')
     total_dividends = Decimal('0')
+    fixed_income_val = Decimal('0')
 
-    # Grupos para o grafico de pizza
+    # Grupos para o grafico de pizza (Anel Interno: Realidade vs Anel Externo: Meta)
     patrimony_by_type = {}
+    strategic_totals = {
+        'Ações': Decimal('0'),
+        'FIIs': Decimal('0'),
+        'Renda Fixa': Decimal('0'),
+        'ETFs / Global': Decimal('0'),
+    }
 
     for a in assets:
         qty = a.quantity
@@ -40,37 +49,105 @@ def dashboard(request):
             aportado = qty * pm
             rentabilidade = patrimony - aportado
             divs = a.total_dividends
+            ttm_divs_asset = a.ttm_dividends
 
             total_patrimony += patrimony
             total_invested += aportado
             total_dividends += divs
+            if a.asset_type == 'fixed_income':
+                fixed_income_val += patrimony
+
+            if a.asset_type in ['stock', 'bdr']:
+                strategic_totals['Ações'] += patrimony
+            elif a.asset_type == 'fii':
+                strategic_totals['FIIs'] += patrimony
+            elif a.asset_type == 'fixed_income':
+                strategic_totals['Renda Fixa'] += patrimony
+            else:
+                strategic_totals['ETFs / Global'] += patrimony
 
             type_name = a.get_asset_type_display()
             if type_name not in patrimony_by_type:
                 patrimony_by_type[type_name] = Decimal('0')
             patrimony_by_type[type_name] += patrimony
 
+            dy_asset = (ttm_divs_asset / patrimony * Decimal('100')) if patrimony > 0 else Decimal('0')
+
             portfolio.append({
                 'asset': a,
                 'ticker': a.ticker or a.name,
+                'name': a.name,
                 'type': type_name,
+                'asset_type_code': a.asset_type,
                 'quantity': qty,
+                'pm': pm,
                 'current_price': preco_atual,
+                'aportado': aportado,
                 'patrimony': patrimony,
                 'rentabilidade': rentabilidade,
-                'rentabilidade_perc': (rentabilidade / aportado * 100) if aportado > 0 else 0
+                'rentabilidade_perc': (rentabilidade / aportado * 100) if aportado > 0 else Decimal('0'),
+                'ttm_divs': ttm_divs_asset,
+                'dy_ttm': dy_asset,
             })
+
+    for item in portfolio:
+        item['weight_pct'] = (item['patrimony'] / total_patrimony * Decimal('100')) if total_patrimony > 0 else Decimal('0')
 
     portfolio.sort(key=lambda x: x['patrimony'], reverse=True)
 
+    type_colors = {
+        'Renda Fixa': '#00DC82',
+        'Fundo Imobiliário': '#3B82F6',
+        'Ação': '#F59E0B',
+        'ETF': '#E2E8F0',
+        'Criptomoeda': '#F87171',
+        'BDR': '#9CA3AF',
+    }
     allocation = []
     for t_name, t_val in patrimony_by_type.items():
-        perc = (t_val / total_patrimony * 100) if total_patrimony > 0 else 0
-        allocation.append({'name': t_name, 'value': t_val, 'percentage': perc})
+        perc = (t_val / total_patrimony * 100) if total_patrimony > 0 else Decimal('0')
+        allocation.append({
+            'name': t_name,
+            'value': t_val,
+            'percentage': perc,
+            'color': type_colors.get(t_name, '#00DC82'),
+        })
     allocation.sort(key=lambda x: x['value'], reverse=True)
 
+    # Dados concêntricos para o gráfico duplo (Anel Externo = Meta | Anel Interno = Realidade)
+    strategic_classes = [
+        ('Ações', config.target_stocks_pct, '#F59E0B'),
+        ('FIIs', config.target_fiis_pct, '#3B82F6'),
+        ('Renda Fixa', config.target_fixed_income_pct, '#00DC82'),
+        ('ETFs / Global', config.target_global_pct, '#E2E8F0'),
+    ]
+    strategic_labels = []
+    strategic_actual_pcts = []
+    strategic_actual_vals = []
+    strategic_target_pcts = []
+    strategic_target_vals = []
+    strategic_colors = []
+
+    for s_name, s_target_pct, s_color in strategic_classes:
+        s_val = strategic_totals.get(s_name, Decimal('0'))
+        s_actual_pct = float((s_val / total_patrimony * Decimal('100')).quantize(Decimal('0.1'))) if total_patrimony > 0 else 0.0
+        s_target_f = float(s_target_pct)
+        s_target_val = float((total_patrimony * (s_target_pct / Decimal('100'))).quantize(Decimal('0.01')))
+        strategic_labels.append(s_name)
+        strategic_actual_pcts.append(s_actual_pct)
+        strategic_actual_vals.append(float(s_val))
+        strategic_target_pcts.append(s_target_f)
+        strategic_target_vals.append(s_target_val)
+        strategic_colors.append(s_color)
+
     total_rentabilidade = total_patrimony - total_invested
-    total_rentabilidade_perc = (total_rentabilidade / total_invested * 100) if total_invested > 0 else 0
+    total_rentabilidade_perc = (total_rentabilidade / total_invested * 100) if total_invested > 0 else Decimal('0')
+    total_return_with_divs = total_rentabilidade + total_dividends
+    total_return_with_divs_perc = (total_return_with_divs / total_invested * 100) if total_invested > 0 else Decimal('0')
+
+    variable_income_val = total_patrimony - fixed_income_val
+    fixed_income_pct = (fixed_income_val / total_patrimony * 100) if total_patrimony > 0 else Decimal('0')
+    variable_income_pct = (variable_income_val / total_patrimony * 100) if total_patrimony > 0 else Decimal('0')
 
     last_div = Dividend.objects.order_by('-payment_date').first()
     last_month_divs = Decimal('0')
@@ -82,7 +159,25 @@ def dashboard(request):
 
     one_year_ago = date.today() - timedelta(days=365)
     ttm_dividends = Dividend.objects.filter(payment_date__gte=one_year_ago).aggregate(t=Sum('total_value'))['t'] or Decimal('0')
-    dividend_yield_ttm = (ttm_dividends / total_patrimony * 100) if total_patrimony > 0 else 0
+    avg_monthly_divs = (ttm_dividends / Decimal('12')).quantize(Decimal('0.01'))
+    dividend_yield_ttm = (ttm_dividends / total_patrimony * 100) if total_patrimony > 0 else Decimal('0')
+    yield_on_cost_ttm = (ttm_dividends / total_invested * 100) if total_invested > 0 else Decimal('0')
+
+    patrimony_progress = (
+        min(Decimal('100.0'), (total_patrimony / config.patrimony_target * Decimal('100'))).quantize(Decimal('0.1'))
+        if config.patrimony_target > 0 else Decimal('0.0')
+    )
+    passive_progress = (
+        min(Decimal('100.0'), (avg_monthly_divs / config.passive_income_target * Decimal('100'))).quantize(Decimal('0.1'))
+        if config.passive_income_target > 0 else Decimal('0.0')
+    )
+
+    # Top Pagadores de Dividendos (12m)
+    top_payers = [p for p in portfolio if p['ttm_divs'] > 0]
+    top_payers.sort(key=lambda x: x['ttm_divs'], reverse=True)
+    for tp in top_payers:
+        tp['monthly_avg'] = tp['ttm_divs'] / Decimal('12')
+        tp['share_of_divs_pct'] = (tp['ttm_divs'] / ttm_dividends * Decimal('100')) if ttm_dividends > 0 else Decimal('0')
 
     # 8. Gráfico de Proventos Mensais por Ativo (Últimos 12 meses)
     today_date = date.today()
@@ -128,15 +223,35 @@ def dashboard(request):
             })
 
     context = {
+        'config': config,
         'portfolio': portfolio,
+        'portfolio_count': len(portfolio),
         'total_patrimony': total_patrimony,
         'total_invested': total_invested,
         'total_rentabilidade': total_rentabilidade,
         'total_rentabilidade_perc': total_rentabilidade_perc,
+        'total_return_with_divs': total_return_with_divs,
+        'total_return_with_divs_perc': total_return_with_divs_perc,
         'total_dividends': total_dividends,
+        'ttm_dividends': ttm_dividends,
+        'avg_monthly_divs': avg_monthly_divs,
         'last_month_divs': last_month_divs,
         'dividend_yield_ttm': dividend_yield_ttm,
+        'yield_on_cost_ttm': yield_on_cost_ttm,
+        'fixed_income_val': fixed_income_val,
+        'fixed_income_pct': fixed_income_pct,
+        'variable_income_val': variable_income_val,
+        'variable_income_pct': variable_income_pct,
+        'patrimony_progress': patrimony_progress,
+        'passive_progress': passive_progress,
+        'top_payers': top_payers[:5],
         'allocation': allocation,
+        'strategic_labels': json.dumps(strategic_labels),
+        'strategic_actual_pcts': json.dumps(strategic_actual_pcts),
+        'strategic_actual_vals': json.dumps(strategic_actual_vals),
+        'strategic_target_pcts': json.dumps(strategic_target_pcts),
+        'strategic_target_vals': json.dumps(strategic_target_vals),
+        'strategic_colors': json.dumps(strategic_colors),
         'bar_chart_labels': json.dumps(bar_chart_labels),
         'bar_chart_datasets': json.dumps(bar_chart_datasets),
     }

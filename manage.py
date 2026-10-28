@@ -15,6 +15,14 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+
+    # Define a porta padrão do runserver para 7777 (ou respeita a variável PORT do .env/Docker)
+    try:
+        from django.core.management.commands.runserver import Command as runserver_cmd
+        runserver_cmd.default_port = os.getenv("PORT", "7777")
+    except Exception:
+        pass
+
     execute_from_command_line(sys.argv)
 
 
